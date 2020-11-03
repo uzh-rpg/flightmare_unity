@@ -527,8 +527,12 @@ namespace RPGFlightmare
             Debug.Log(vehicle_i.rotation[2]);
             Debug.Log(vehicle_i.rotation[3]);
             Debug.Log(quaternion.eulerAngles);
+
+            // Quaternion To Matrix conversion failed because input Quaternion(=quaternion) is invalid
+            // create valid Quaternion from Euler angles
+            Quaternion unity_quat = Quaternion.Euler(quaternion.eulerAngles);
             var scale = new Vector3(1, 1, 1);
-            Matrix4x4 T_WB = Matrix4x4.TRS(translation, quaternion, scale);
+            Matrix4x4 T_WB = Matrix4x4.TRS(translation, unity_quat, scale);
             var T_BC = ListToMatrix4x4(camera.T_BC);
             // translate camera from body frame to world frame
             var T_WC = T_WB * T_BC;
