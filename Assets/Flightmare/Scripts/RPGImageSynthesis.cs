@@ -35,7 +35,8 @@ namespace RPGFlightmare
       CatergoryId = 1,
       DepthCompressed = 2,
       DepthMultichannel = 3,
-      Normals = 4
+      Normals = 4,
+      DepthRaw = 5,
     };
     public Dictionary<string, bool> support_antialiasing = new Dictionary<string, bool>() { };
     public Dictionary<string, bool> needs_rescale = new Dictionary<string, bool>() { };
@@ -116,7 +117,8 @@ namespace RPGFlightmare
           break;
         // Setup compressed depth for the camera
         case "depth":
-          SetupCameraWithReplacementShader(subcam, uberReplacementShader, ReplacelementModes.DepthCompressed, Color.white);
+          //SetupCameraWithReplacementShader(subcam, uberReplacementShader, ReplacelementModes.DepthCompressed, Color.white);
+          SetupCameraWithReplacementShader(subcam, uberReplacementShader, ReplacelementModes.DepthRaw, Color.white);
           if (!support_antialiasing.ContainsKey(image_mode)) support_antialiasing[image_mode] = true;
           if (!needs_rescale.ContainsKey(image_mode)) needs_rescale[image_mode] = false;
           break;
@@ -148,7 +150,7 @@ namespace RPGFlightmare
       bool supportsAntialiasing = support_antialiasing[image_mode];
       bool needsRescale = needs_rescale[image_mode];
       var depth = 24;
-      var format = RenderTextureFormat.Default;
+      var format = image_mode=="depth" ? RenderTextureFormat.RFloat : RenderTextureFormat.Default;
       var readWrite = RenderTextureReadWrite.Default;
       var antiAliasing = (supportsAntialiasing) ? Mathf.Max(1, QualitySettings.antiAliasing) : 1;
 
@@ -158,7 +160,7 @@ namespace RPGFlightmare
 
       var renderRT = (!needsRescale) ? finalRT :
           RenderTexture.GetTemporary(subcam.pixelWidth, subcam.pixelHeight, depth, format, readWrite, antiAliasing);
-      var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+      var tex = new Texture2D(width, height, image_mode=="depth" ? TextureFormat.RFloat : TextureFormat.RGB24, false);
 
       var prevActiveRT = RenderTexture.active;
       var prevCameraRT = subcam.targetTexture;

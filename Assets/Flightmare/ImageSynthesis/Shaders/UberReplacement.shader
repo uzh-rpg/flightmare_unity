@@ -63,6 +63,11 @@ float4 Output(float depth01, float3 normal)
 		float3 c = normal * 0.5 + 0.5;
 		return float4(c, 1);
 	}
+	else if (_OutputMode == 5) // DepthRaw
+	{
+		return depth01;
+	}
+
 
 	// unsupported _OutputMode
 	return float4(1, 0.5, 0.5, 1);
