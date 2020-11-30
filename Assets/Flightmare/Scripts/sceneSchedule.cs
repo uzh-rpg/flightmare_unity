@@ -21,10 +21,10 @@ namespace RPGFlightmare
     public Scenes()
     {
       scenes_list.Add(SCENE_INDUSTRIAL);
-      scenes_list.Add(SCENE_WAREHOUSE);
-      scenes_list.Add(SCENE_GARAGE); 
-      scenes_list.Add(SCENE_NATUREFOREST);
-      scenes_list.Add(SCENE_TUNNELS);
+      //scenes_list.Add(SCENE_WAREHOUSE);
+      //scenes_list.Add(SCENE_GARAGE); 
+      //scenes_list.Add(SCENE_NATUREFOREST);
+      //scenes_list.Add(SCENE_TUNNELS);
 
       default_scene_id = 0;
       num_scene = scenes_list.Count;
@@ -50,16 +50,16 @@ namespace RPGFlightmare
       }
       else
       {
-        SceneManager.LoadScene(scenes.scenes_list[scene_id]);
+        SceneManager.LoadScene(scenes.scenes_list[scenes.default_scene_id]);
       }
 
-      if (!camera_preview)
+      /*if (!camera_preview)
       {
         foreach (var tl in time_lines)
         {
           tl.SetActive(false);
         }
-      }
+      }*/
     }
 
     public void loadIndustrial()
