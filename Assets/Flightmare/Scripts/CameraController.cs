@@ -311,7 +311,7 @@ namespace RPGFlightmare
             // Update position of game objects.
             updateObjectPositions();
             // Do collision detection
-            // updateVehicleCollisions();
+            updateVehicleCollisions();
             // Compute sensor data
             updateLidarData();
             //
@@ -604,7 +604,6 @@ namespace RPGFlightmare
     {
       if (internal_state.readyToRender)
       {
-        // var raycastingVehicle = sub_message.vehicles.Where(obj => obj.hasCollisionCheck);
         int vehicle_count = 0;
         foreach (var vehicl_i in settings.vehicles)
         {
@@ -686,13 +685,13 @@ namespace RPGFlightmare
         c.enabled = true;
       }
       // Disable unneeded vehicle colliders
-      // var nonRaycastingVehicles = settings.vehicles.Where(obj => !obj.hasCollisionCheck);
-      // foreach (Vehicle_t vehicle in nonRaycastingVehicles){
-      //     ObjectState_t internal_object_state = internal_state.getWrapperObject(vehicle.ID, quad_template);
-      //     // Get vehicle collider
-      //     Collider vehicleCollider = internal_object_state.gameObj.GetComponent<Collider>();
-      //     vehicleCollider.enabled = false;
-      // }
+      var nonRaycastingVehicles = settings.vehicles.Where(obj => !obj.hasCollisionCheck);
+      foreach (Vehicle_t vehicle in nonRaycastingVehicles){
+          ObjectState_t internal_object_state = internal_state.getWrapperObject(vehicle.ID, quad_template);
+          // Get vehicle collider
+          Collider vehicleCollider = internal_object_state.gameObj.GetComponent<Collider>();
+          vehicleCollider.enabled = false;
+      }
       //UNload unused assets
       Resources.UnloadUnusedAssets();
     }
@@ -793,7 +792,6 @@ namespace RPGFlightmare
     {
       // Get metadata
       pub_message.frame_id = sub_message.frame_id;
-      // pub_message.hasVehicleCollision = sub_message.mainVehicle.hasVehicleCollision;
       // Create packet metadata
       var msg = new NetMQMessage();
       msg.Append(JsonConvert.SerializeObject(pub_message));
