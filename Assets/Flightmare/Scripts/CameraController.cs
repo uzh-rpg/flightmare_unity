@@ -38,29 +38,30 @@ namespace RPGFlightmare
   public class CameraController : MonoBehaviour
   {
     // ==============================================================================
-    // Default Parameters
+    // Default Parameters 
     // ==============================================================================
     [HideInInspector]
     public const int pose_client_default_port = 10253;
     [HideInInspector]
     public const int video_client_default_port = 10254;
     [HideInInspector]
-    public int pose_client_port = 10253;
-    [HideInInspector]
-    public int video_client_port = 10254;
-    [HideInInspector]
     public const string client_ip_default = "127.0.0.1";
     [HideInInspector]
     public const string client_ip_pref_key = "client_ip";
     [HideInInspector]
-    public const int connection_timeout_seconds = 5;
+    public const int connection_timeout_seconds_default = 5;
     [HideInInspector]
     public string rpg_dsim_version = "";
 
     // ==============================================================================
     // Public Parameters
     // ==============================================================================
+
+    // Inspector default parameters
     public string client_ip = client_ip_default;
+    public int pose_client_port = pose_client_default_port;
+    public int video_client_port = video_client_default_port;
+    public const int connection_timeout_seconds = connection_timeout_seconds_default;
 
     // public bool DEBUG = false;
     // public bool outputLandmarkLocations = false;
