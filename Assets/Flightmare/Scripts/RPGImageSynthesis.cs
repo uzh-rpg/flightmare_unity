@@ -86,10 +86,9 @@ namespace RPGFlightmare
       newCamera.fieldOfView = camFOV;
       newCamera.nearClipPlane = nearClipPlane;
       newCamera.farClipPlane = farClipPlane;
-      //
+      
       updateCameraFilter(newCamera, image_mode);
-      newCamera.enabled = false;
-      //
+      newCamera.targetDisplay = 1;
       return newCamera;
     }
     public void updateCameraFilter(Camera subcam, string image_mode)

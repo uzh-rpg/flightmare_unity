@@ -481,7 +481,7 @@ namespace RPGFlightmare
         }
       }
       {
-        // instantiate thired person view camera
+        // instantiate third person view camera
         GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
         var thirdPV_cam = tpv_obj.GetComponent<Camera>();
         // hard coded parameters for third person camera view
@@ -545,11 +545,12 @@ namespace RPGFlightmare
             //
             if (vehicle_count == activate_vehicle_cam)
             {
-              obj.SetActive(true);
+              currentCam.targetDisplay = 0;
+
             }
             else
             {
-              obj.SetActive(false);
+              currentCam.targetDisplay = 1;
             }
           }
           // Debug.Log("xxxxxxxxx" + vehicle_i.ID);
@@ -573,13 +574,15 @@ namespace RPGFlightmare
           GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
           Vector3 newPos = main_vehicle.transform.position + thirdPV_cam_offset;
           tpv_obj.transform.position = Vector3.Slerp(tpv_obj.transform.position, newPos, 0.5f);
+          var tpv_cam = tpv_obj.GetComponent<Camera>();
           if ((activate_vehicle_cam == 0) || (settings.numCameras == 0))
           {
-            tpv_obj.SetActive(true);
+            tpv_cam.targetDisplay = 0;
+
           }
           else
           {
-            tpv_obj.SetActive(false);
+            tpv_cam.targetDisplay = 1;
           }
         }
 
@@ -737,11 +740,12 @@ namespace RPGFlightmare
             // enable Camera.
             if (vehicle_count == activate_vehicle_cam)
             {
-              obj.SetActive(true);
+              currentCam.targetDisplay = 0;
+
             }
             else
             {
-              obj.SetActive(false);
+              currentCam.targetDisplay = 1;
             }
             int layer_id = 0;
             foreach (var layer_on in camera.enabledLayers)
@@ -765,13 +769,14 @@ namespace RPGFlightmare
         GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
         tpv_obj.GetComponent<Camera>().pixelRect = new Rect(0, 0,
                 settings.screenWidth, settings.screenHeight);
+        var tpv_cam = tpv_obj.GetComponent<Camera>();
         if ((activate_vehicle_cam == 0) || (settings.numCameras == 0))
         {
-          tpv_obj.SetActive(true);
+          tpv_cam.targetDisplay = 0;
         }
         else
         {
-          tpv_obj.SetActive(false);
+          tpv_cam.targetDisplay = 1;
         }
       }
       img_post_processing.OnSceneChange();
@@ -809,18 +814,9 @@ namespace RPGFlightmare
           //
           GameObject obj = internal_state.getGameobject(cam_config.ID, HD_camera);
           var current_cam = obj.GetComponent<Camera>();
-          if (vehicle_count != activate_vehicle_cam)
-          {
-            obj.SetActive(true);
-            var raw = readImageFromHiddenCamera(current_cam, cam_config);
-            msg.Append(raw);
-            obj.SetActive(false);
-          }
-          else
-          {
-            var raw = readImageFromScreen(cam_config);
-            msg.Append(raw);
-          }
+          var raw = readImageFromHiddenCamera(current_cam, cam_config);
+          msg.Append(raw);
+
           int layer_id = 0;
           foreach (var layer_on in cam_config.enabledLayers)
           {
