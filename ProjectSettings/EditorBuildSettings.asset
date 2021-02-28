@@ -11,13 +11,13 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Environments/Industrial/Scenes/DemoScene.unity
     guid: 03818a84e6e20aeec9ccdc69b66daf58
-  - enabled: 1
-    path: Assets/Environments/Warehouse/Scenes/DemoScene.unity
-    guid: 9906764cda9b242a78b59a565467f766
-  - enabled: 1
-    path: Assets/Environments/Garage/Scenes/DemoScene.unity
-    guid: ad7d65927cb7489f0bbf9a79c6ba9b8a
-  - enabled: 1
-    path: Assets/Environments/Forest/Scenes/DemoScene.unity
-    guid: f7f5a9dc03ae0f337b000e8e4cafbb53
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
   m_configObjects: {}
