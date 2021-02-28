@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Runtime.Serialization.Formatters.Binary;
 // Array ops
 using System.Linq;
 
@@ -28,7 +28,6 @@ using System.IO;
 using UnityEditor;
 
 // Include postprocessing
-using UnityEngine.Rendering.PostProcessing;
 // Dynamic scene management
 using UnityEngine.SceneManagement;
 
@@ -63,15 +62,13 @@ namespace RPGFlightmare
     public int video_client_port = video_client_default_port;
     public const int connection_timeout_seconds = connection_timeout_seconds_default;
 
-    // public bool DEBUG = false;
-    // public bool outputLandmarkLocations = false;
+    public GameObject kamera;
     public GameObject HD_camera;
+
     public GameObject quad_template;  // Main vehicle template
     public GameObject gate_template;  // Main vehicle template
     public GameObject splash_screen;
-    public GameObject PointCloudSaved;
     public InputField input_ip;
-    public bool enable_flying_cam = false;
     // default scenes and assets
     private string topLevelSceneName = "Top_Level_Scene";
 
@@ -85,6 +82,13 @@ namespace RPGFlightmare
     private SubMessage_t sub_message;  // subscribed for update
     private PubMessage_t pub_message; // publish messages, e.g., images, collision, etc.
                                       // Internal state & storage variables
+    public Int64 current_time = 1;
+    public Int64 time_last_frame = 1;
+    public Int64 framerate = 30000;
+    private bool timerStarted = false;
+    private Int64 last_deltatime;
+    private Int64 deltatime;
+    private TimeStepMessage_t time_message;
     private UnityState_t internal_state;
     private Texture2D rendered_frame;
     private object socket_lock;
@@ -95,6 +99,10 @@ namespace RPGFlightmare
     private sceneSchedule scene_schedule;
     private Vector3 thirdPV_cam_offset;
     private int activate_vehicle_cam = 0;
+    bool ready_to_render = false;
+    bool not_started = true;
+    private int count;
+    private bool storing_frames = false;
 
     /* =====================
     * UNITY PLAYER EVENT HOOKS 
@@ -104,7 +112,6 @@ namespace RPGFlightmare
     // Only execute once.
     public void Start()
     {
-      // Application.targetFrameRate = 9999;
       // Make sure that this gameobject survives across scene reloads
       DontDestroyOnLoad(this.gameObject);
       // Get application version
@@ -133,11 +140,7 @@ namespace RPGFlightmare
         {
           ConnectToClient(client_ip);
         }
-        // Check if the program should use CLI arguments for IP.
-        // obstacle_perturbation_file = GetArg("-obstacle-perturbation-file", "");
-        // Disable fullscreen.
         Screen.fullScreen = false;
-        Screen.SetResolution(1024, 768, false);
       }
       else
       {
@@ -145,22 +148,16 @@ namespace RPGFlightmare
         ConnectToClient(client_ip);
       }
 
-      // Init simple splash screen
-      // Text text_obj = splash_screen.GetComponentInChildren<Text>(true);
-      // input_ip.text = client_ip;
-      // text_obj.text = "Welcome to RPG Flightmare!";
-      // splash_screen.SetActive(true);
-
       // Initialize Internal State
       internal_state = new UnityState_t();
       // Do not try to do any processing this frame so that we can render our splash screen.
       internal_state.screenSkipFrames = 1;
-      // cameraFilter.CameraFilterInit(HD_camera);
       img_post_processing = GetComponent<RPGImageSynthesis>();
 
       scene_schedule = GetComponent<sceneSchedule>();
-      //
-      StartCoroutine(WaitForRender());
+      
+      ready_to_render = true;
+      InitTime();
     }
 
     // Co-routine in Unity, executed every frame. 
@@ -169,17 +166,15 @@ namespace RPGFlightmare
       // Wait until end of frame to transmit images
       while (true)
       {
-        // Wait until all rendering + UI is done.
-        // Blocks until the frame is rendered.
-        // Debug.Log("Wait for end of frame: " + Time.deltaTime);
         yield return new WaitForEndOfFrame();
         // Check if this frame should be rendered.
         if (internal_state.readyToRender && sub_message != null)
         {
-          // Debug.Log("Ready to Render.");
           // Read the frame from the GPU backbuffer and send it via ZMQ.
           sendFrameOnWire();
         }
+        yield return null;
+
       }
     }
 
@@ -211,6 +206,8 @@ namespace RPGFlightmare
 
     public void ConnectToClient(string inputIPString)
     {
+      // pose_client_port=10270;
+      // video_client_port=10271;
       Debug.Log("Trying to connect to: " + inputIPString);
       string pose_host_address = "tcp://" + inputIPString + ":" + pose_client_port.ToString();
       string video_host_address = "tcp://" + inputIPString + ":" + video_client_port.ToString();
@@ -249,7 +246,7 @@ namespace RPGFlightmare
     */
     void Update()
     {
-      // Debug.Log("Update: " + Time.deltaTime);
+      // Debug.LogError("Update: " + Time.deltaTime);
       if (pull_socket.HasIn || socket_initialized)
       {
         // if (splash_screen.activeSelf) splash_screen.SetActive(false);
@@ -305,6 +302,7 @@ namespace RPGFlightmare
           else
           {
             pub_message = new PubMessage_t(settings);
+            time_message = new TimeStepMessage_t();
             // after initialization, we only receive sub_message message of the vehicle. 
             sub_message = JsonConvert.DeserializeObject<SubMessage_t>(msg[1].ConvertToString());
             // Ensure that dynamic object settings such as depth-scaling and color are set correctly.
@@ -334,13 +332,36 @@ namespace RPGFlightmare
           PointCloudTask(save_pointcloud);
         }
       }
-      else
+      if (ready_to_render && not_started)
       {
-        // Throttle to 10hz when idle
-        Thread.Sleep(1); // [ms]
+        not_started = false;
+        StartCoroutine(WaitForRender());
       }
     }
 
+    // initialize time function for event camera
+    void InitTime()
+    {
+      // initilaize time at one nanosecond for stability
+      current_time = 1;
+      time_last_frame = current_time;
+      timerStarted = true;
+    }
+    // update time function 
+    public void UpdateTimeFct(Int64 nexttimestep)
+    {
+      current_time = current_time + nexttimestep;
+      last_deltatime = deltatime;
+      deltatime = nexttimestep;
+    }
+    // update time function when also rgb camera rendered
+    public void UpdateTimeFct(Int64 nexttimestep, bool rgb)
+    {
+      current_time = current_time + nexttimestep;
+      time_last_frame = current_time;
+      last_deltatime = deltatime;
+      deltatime = nexttimestep;
+    }
     /* ==================================
     * FlightGoggles High Level Functions 
     * ==================================
@@ -406,7 +427,6 @@ namespace RPGFlightmare
 
         case 4:
           Debug.Log("set camera post process settings");
-          // imgPostProcessingUpdate();
           setCameraPostProcessSettings();
           enableCollidersAndLandmarks();
           // Set initialization to -1 to indicate that we're done initializing.
@@ -415,7 +435,6 @@ namespace RPGFlightmare
           internal_state.screenSkipFrames++;
           // Skip the rest of this frame
           break;
-
           // If initializationStep does not match any of the ones above
           // then initialization is done and we need do nothing more.
 
@@ -423,11 +442,7 @@ namespace RPGFlightmare
     }
     void loadScene()
     {
-      // scene_schedule.destoryTimeLine();
-      // if(settings.scene_id != scene_schedule.scenes.default_scene_id)
-      // {
       scene_schedule.loadScene(settings.scene_id, false);
-      // }
     }
 
     void setCameraPostProcessSettings()
@@ -439,6 +454,13 @@ namespace RPGFlightmare
           string camera_ID = camera.ID;
           // Get the camera object, create if not exist
           ObjectState_t internal_object_state = internal_state.getWrapperObject(camera_ID, HD_camera);
+          GameObject obj = internal_object_state.gameObj;
+        }
+        foreach (EventCamera_t camera in vehicle_i.eventcameras)
+        {
+          string camera_ID = camera.ID;
+          // Get the camera object, create if not exist
+          ObjectState_t internal_object_state = internal_state.getWrapperObject(camera_ID, kamera);
           GameObject obj = internal_object_state.gameObj;
         }
       }
@@ -459,11 +481,8 @@ namespace RPGFlightmare
           Debug.Log(camera.ID);
           // Get camera object
           GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
-          // 
           var currentCam = obj.GetComponent<Camera>();
           currentCam.fieldOfView = camera.fov;
-          currentCam.nearClipPlane = camera.nearClipPlane[0];
-          currentCam.farClipPlane = camera.farClipPlane[0];
           // apply translation and rotation;
           var translation = ListToVector3(vehicle_i.position);
           var quaternion = ListToQuaternion(vehicle_i.rotation);
@@ -473,11 +492,30 @@ namespace RPGFlightmare
           var T_BC = ListToMatrix4x4(camera.T_BC);
           // translate camera from body frame to world frame
           var T_WC = T_WB * T_BC;
-          Debug.Log(T_WC);
           // compute camera position and rotation with respect to world frame
           var position = new Vector3(T_WC[0, 3], T_WC[1, 3], T_WC[2, 3]);
           var rotation = T_WC.rotation;
           obj.transform.SetPositionAndRotation(position, rotation);
+        }
+        foreach (EventCamera_t camera in vehicle_i.eventcameras)
+        {
+          // Get camera object
+          GameObject obj_ = internal_state.getGameobject(camera.ID, kamera);
+          var currentCam = obj_.GetComponent<Camera>();
+          currentCam.fieldOfView = camera.fov;
+          // apply translation and rotation;
+          var translation = ListToVector3(vehicle_i.position);
+          var quaternion = ListToQuaternion(vehicle_i.rotation);
+          var scale = new Vector3(1, 1, 1);
+
+          Matrix4x4 T_WB = Matrix4x4.TRS(translation, quaternion, scale);
+          var T_BC = ListToMatrix4x4(camera.T_BC);
+          // translate camera from body frame to world frame
+          var T_WC = T_WB * T_BC;
+          // compute camera position and rotaeventcamerastion with respect to world frame
+          var position = new Vector3(T_WC[0, 3], T_WC[1, 3], T_WC[2, 3]);
+          var rotation = T_WC.rotation;
+          obj_.transform.SetPositionAndRotation(position, rotation);
         }
       }
       {
@@ -498,9 +536,9 @@ namespace RPGFlightmare
     {
       if (internal_state.readyToRender)
       {
-        if (Input.GetKeyDown(KeyCode.Space))
+        // always activate vehcile cam  
         {
-          activate_vehicle_cam += 1;
+          activate_vehicle_cam = 1;
           if (activate_vehicle_cam > settings.numVehicles * settings.numCameras)
           {
             activate_vehicle_cam = 0;
@@ -522,15 +560,12 @@ namespace RPGFlightmare
             // apply translation and rotation;
             var translation = ListToVector3(vehicle_i.position);
             var quaternion = ListToQuaternion(vehicle_i.rotation);
-            Debug.Log(vehicle_i.ID);
-            Debug.Log(vehicle_i.rotation[0]);
-            Debug.Log(vehicle_i.rotation[1]);
-            Debug.Log(vehicle_i.rotation[2]);
-            Debug.Log(vehicle_i.rotation[3]);
-            Debug.Log(quaternion.eulerAngles);
-
-            // Quaternion To Matrix conversion failed because input Quaternion(=quaternion) is invalid
-            // create valid Quaternion from Euler angles
+            // Debug.Log(vehicle_i.ID);
+            // Debug.Log(vehicle_i.rotation[0]);
+            // Debug.Log(vehicle_i.rotation[1]);
+            // Debug.Log(vehicle_i.rotation[2]);
+            // Debug.Log(vehicle_i.rotation[3]);
+            // Debug.Log(quaternion.eulerAngles);
             Quaternion unity_quat = Quaternion.Euler(quaternion.eulerAngles);
             var scale = new Vector3(1, 1, 1);
             Matrix4x4 T_WB = Matrix4x4.TRS(translation, unity_quat, scale);
@@ -553,7 +588,49 @@ namespace RPGFlightmare
               currentCam.targetDisplay = 1;
             }
           }
-          // Debug.Log("xxxxxxxxx" + vehicle_i.ID);
+          vehicle_count = 0;
+          // Update camera positions and set parameters
+          foreach (EventCamera_t camera in vehicle_i.eventcameras)
+          {
+            vehicle_count += 1;
+            // Get camera object
+            GameObject obj = internal_state.getGameobject(camera.ID, kamera);
+            // 
+            var currentCam = obj.GetComponent<Camera>();
+            currentCam.fieldOfView = camera.fov;
+            eventsCompute eventcreation = obj.GetComponent<eventsCompute>();
+            eventcreation.pos_threshold = camera.Cp;
+            eventcreation.neg_threshold = camera.Cm;
+            eventcreation.sigma_cp = camera.sigma_Cp;
+            eventcreation.sigma_cm = camera.sigma_Cm;
+            // conversion to microseconds
+            UInt64 refractory_per = (camera.refractory_period_ns / 1000);
+            eventcreation.refractory_period = (int)(camera.refractory_period_ns);
+            eventcreation.log_eps = camera.log_eps;
+            eventcreation.SetTime(current_time, deltatime);
+
+            // apply translation and rotation;
+            var translation = ListToVector3(vehicle_i.position);
+            var quaternion = ListToQuaternion(vehicle_i.rotation);
+            // Debug.Log(vehicle_i.ID);
+            // Debug.Log(vehicle_i.rotation[0]);
+            // Debug.Log(vehicle_i.rotation[1]);
+            // Debug.Log(vehicle_i.rotation[2]);
+            // Debug.Log(vehicle_i.rotation[3]);
+            // Debug.Log(quaternion.eulerAngles);
+            Quaternion unity_quat = Quaternion.Euler(quaternion.eulerAngles);
+            var scale = new Vector3(1, 1, 1);
+            Matrix4x4 T_WB = Matrix4x4.TRS(translation, unity_quat, scale);
+            var T_BC = ListToMatrix4x4(camera.T_BC);
+            // translate camera from body frame to world frame
+            var T_WC = T_WB * T_BC;
+            //
+            var position = new Vector3(T_WC[0, 3], T_WC[1, 3], T_WC[2, 3]);
+            //
+            var rotation = T_WC.rotation;
+            obj.transform.SetPositionAndRotation(position, rotation);
+            obj.SetActive(true);
+          }
           // Apply translation, rotation, and scaling to vehicle
           GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
           vehicle_obj.transform.SetPositionAndRotation(ListToVector3(vehicle_i.position), ListToQuaternion(vehicle_i.rotation));
@@ -574,8 +651,7 @@ namespace RPGFlightmare
           GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
           Vector3 newPos = main_vehicle.transform.position + thirdPV_cam_offset;
           tpv_obj.transform.position = Vector3.Slerp(tpv_obj.transform.position, newPos, 0.5f);
-          var tpv_cam = tpv_obj.GetComponent<Camera>();
-          if ((activate_vehicle_cam == 0) || (settings.numCameras == 0))
+          if ((activate_vehicle_cam == 0) || (settings.numCameras == 0 && settings.numEventCameras == 0))
           {
             tpv_cam.targetDisplay = 0;
 
@@ -719,7 +795,6 @@ namespace RPGFlightmare
         obj.transform.localScale = ListToVector3(vehicle.size);
       }
     }
-
     void setCameraViewports()
     {
       int vehicle_count = 0;
@@ -732,11 +807,12 @@ namespace RPGFlightmare
             // Get object
             GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
             var currentCam = obj.GetComponent<Camera>();
+            Debug.Log("settins width and height " + settings.camHeight + "/" + settings.camWidth);
             // Make sure camera renders to the correct portion of the screen.
-            // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0, 
-            // settings.camWidth * (camera.outputIndex+1), settings.camHeight);
-            currentCam.pixelRect = new Rect(0, 0,
-                settings.camWidth, settings.camHeight);
+            // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0,
+            //   settings.camWidth * (camera.outputIndex + 1), settings.camHeight);
+            // currentCam.pixelRect = new Rect(0, 0,
+            //     settings.camWidth, settings.camHeight);
             // enable Camera.
             if (vehicle_count == activate_vehicle_cam)
             {
@@ -754,7 +830,7 @@ namespace RPGFlightmare
               {
                 string filter_ID = camera.ID + "_" + layer_id.ToString();
                 var cam_filter = img_post_processing.CreateHiddenCamera(filter_ID,
-                    img_post_processing.image_modes[layer_id], camera.fov, camera.nearClipPlane[layer_id + 1], camera.farClipPlane[layer_id + 1], currentCam);
+                    img_post_processing.image_modes[layer_id], camera.fov, currentCam);
                 if (!internal_state.camera_filters.ContainsKey(filter_ID))
                 {
                   internal_state.camera_filters[filter_ID] = cam_filter;
@@ -764,19 +840,46 @@ namespace RPGFlightmare
             }
           }
         }
-      }
-      {
-        GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
-        tpv_obj.GetComponent<Camera>().pixelRect = new Rect(0, 0,
-                settings.screenWidth, settings.screenHeight);
-        var tpv_cam = tpv_obj.GetComponent<Camera>();
-        if ((activate_vehicle_cam == 0) || (settings.numCameras == 0))
+        vehicle_count = 0;
+        foreach (EventCamera_t camera in vehicle_i.eventcameras)
         {
-          tpv_cam.targetDisplay = 0;
-        }
-        else
-        {
-          tpv_cam.targetDisplay = 1;
+          vehicle_count += 1;
+          {
+            // Get object
+            GameObject obj = internal_state.getGameobject(camera.ID, kamera);
+            var currentCam = obj.GetComponent<Camera>();
+            currentCam.enabled = true;
+            
+            // Make sure camera renders to the correct portion of the screen.
+            // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0, 
+            // settings.camWidth * (camera.outputIndex+1), settings.camHeight);
+            currentCam.pixelRect = new Rect(0, 0,
+                settings.camWidth, settings.camHeight);
+            // enable Camera.
+            obj.SetActive(true);
+            string _name = camera.ID + "_" + "log";
+            var cam_filter_ = img_post_processing.CreateHiddenLogCamera(_name, camera.fov, currentCam);
+
+            if (!internal_state.camera_filters.ContainsKey(_name))
+            {
+              internal_state.camera_filters[_name] = cam_filter_;
+            }
+
+            string name = camera.ID + "_" + "event";
+            var event_cam = img_post_processing.CreateEventCamera(name, camera.fov, currentCam);
+
+            // TODO: maybe add a new member function specifically for the optical flow
+            string cam_name = camera.ID + "_" + "of";
+            var cam_filter = img_post_processing.CreateHiddenOFCamera(cam_name,
+              camera.fov, currentCam);
+
+            if (!internal_state.camera_filters.ContainsKey(cam_name))
+            {
+              internal_state.camera_filters[cam_name] = cam_filter;
+            }
+
+
+          }
         }
       }
       img_post_processing.OnSceneChange();
@@ -809,40 +912,95 @@ namespace RPGFlightmare
         {
           vehicle_count += 1;
           // Length of RGB slice
-          // string camera_ID = cam_config.ID;
           GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
-          //
           GameObject obj = internal_state.getGameobject(cam_config.ID, HD_camera);
           var current_cam = obj.GetComponent<Camera>();
           var raw = readImageFromHiddenCamera(current_cam, cam_config);
           msg.Append(raw);
-
           int layer_id = 0;
-          foreach (var layer_on in cam_config.enabledLayers)
           {
-            if (layer_on)
+            foreach (var layer_on in cam_config.enabledLayers)
             {
-              string filter_ID = cam_config.ID + "_" + layer_id.ToString();
-              var rawimage = img_post_processing.getRawImage(internal_state.camera_filters[filter_ID],
-                  settings.camWidth, settings.camHeight, img_post_processing.image_modes[layer_id]);
-              msg.Append(rawimage);
+              if (layer_on)
+              {
+                string filter_ID = cam_config.ID + "_" + layer_id.ToString();
+                {
+                  var rawimage = img_post_processing.getRawImage(internal_state.camera_filters[filter_ID],
+                      settings.camWidth, settings.camHeight, img_post_processing.image_modes[layer_id]);
+                  msg.Append(rawimage);
+                }
+
+              }
+              layer_id += 1;
             }
-            layer_id += 1;
+          }
+
+        }
+        foreach (var cam_config in vehicle_i.eventcameras)
+        {
+          vehicle_count += 1;
+          GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
+          //get camera object
+          GameObject obj = internal_state.getGameobject(cam_config.ID, kamera);
+
+          var current_cam = obj.GetComponent<Camera>();
+          // get eventcamera component
+          var script = obj.GetComponent<eventsCompute>();
+          // get rgb image of eventcamera
+          var raw = readImageFromHiddenCamera(current_cam, cam_config);
+
+          var cam_name = cam_config.ID + "_" + "of";
+          // internal_state.camera_filters[cam_name] is the camera needed
+          // compute next timestep
+          Int64 delta_time = img_post_processing.getDeltaTime(internal_state.camera_filters[cam_name], settings.camWidth, settings.camHeight, deltatime);
+
+          bool entering_timefct = false;
+          // control whether the time step applies or whther a general image renderin is necessary
+          if ((time_last_frame + framerate) <= (delta_time + current_time))
+          {
+            time_message.next_timestep = (time_last_frame + framerate - current_time);
+            entering_timefct = true;
+          }
+          else time_message.next_timestep = delta_time;
+          msg.Append(raw);
+
+          var buff = script.getoutput();
+
+          if (script.GetTime() != current_time)
+          {
+            Debug.LogError("time functions do not match");
+          }
+
+          var buff_ = new EventsMessage_t(buff);
+          var bytes = JsonConvert.SerializeObject(buff_);
+          msg.Append(bytes);
+          // TODO: check which time step applies rgb or the other
+          time_message.rgb_frame = storing_frames;
+          time_message.current_time = current_time;
+
+          msg.Append(JsonConvert.SerializeObject(time_message));
+          // update time function based on 
+          if (entering_timefct)
+          {
+            UpdateTimeFct(time_message.next_timestep, time_message.rgb_frame);
+            storing_frames = true;
+          }
+          else
+          {
+            UpdateTimeFct(time_message.next_timestep);
+            storing_frames = false;
           }
         }
-
       }
       if (push_socket.HasOut)
       {
         push_socket.SendMultipartMessage(msg);
       }
     }
+
     byte[] readImageFromScreen(Camera_t cam_config)
     {
-      // rendered_frame.ReadPixels(new Rect(cam_config.outputIndex*(cam_config.width), 0, 
-      // (cam_config.outputIndex+1)*cam_config.width,  cam_config.height), 0, 0);
-      rendered_frame.ReadPixels(new Rect(0, 0,
-          cam_config.width, cam_config.height), 0, 0);
+      rendered_frame.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
       rendered_frame.Apply();
       byte[] raw = rendered_frame.GetRawTextureData();
       return raw;
@@ -850,15 +1008,10 @@ namespace RPGFlightmare
     byte[] readImageFromHiddenCamera(Camera subcam, Camera_t cam_config)
     {
       var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24);
-      //
       var prevActiveRT = RenderTexture.active;
       var prevCameraRT = subcam.targetTexture;
-      //
       RenderTexture.active = templRT;
       subcam.targetTexture = templRT;
-      //
-      // subcam.pixelRect = new Rect(cam_config.width * cam_config.outputIndex, 0, 
-      // cam_config.width * ( cam_config.outputIndex+1), cam_config.height);
       subcam.pixelRect = new Rect(0, 0,
           cam_config.width, cam_config.height);
       subcam.fieldOfView = cam_config.fov;
@@ -867,15 +1020,37 @@ namespace RPGFlightmare
       var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
       image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
       image.Apply();
-      // var bytes = tex.EncodeToPNG();
       byte[] raw = image.GetRawTextureData();
       //
       subcam.targetTexture = prevCameraRT;
       RenderTexture.active = prevActiveRT;
       //
-      UnityEngine.Object.Destroy(image);
       RenderTexture.ReleaseTemporary(templRT);
+      UnityEngine.Object.Destroy(image);
       //
+      return raw;
+    }
+    byte[] readImageFromHiddenCamera(Camera subcam, EventCamera_t cam_config)
+    {
+      var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm, 8);
+      var prevActiveRT = RenderTexture.active;
+      var prevCameraRT = subcam.targetTexture;
+      RenderTexture.active = templRT;
+      subcam.targetTexture = templRT;
+
+      subcam.pixelRect = new Rect(0, 0,
+          cam_config.width, cam_config.height);
+      subcam.fieldOfView = cam_config.fov;
+      
+      subcam.Render();
+      var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
+      image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
+      image.Apply();
+      byte[] raw = image.GetRawTextureData();
+      subcam.targetTexture = prevCameraRT;
+      RenderTexture.active = prevActiveRT;
+      RenderTexture.ReleaseTemporary(templRT);
+      UnityEngine.Object.Destroy(image);
       return raw;
     }
 
@@ -914,6 +1089,7 @@ namespace RPGFlightmare
 
     // Helper functions for converting  vector -> list
     public static List<float> Vector3ToList(Vector3 vec) { return new List<float>(new float[] { vec[0], vec[1], vec[2] }); }
+    public static List<float> Vector2ToList(Vector2 vec) { return new List<float>(new float[] { vec[0], vec[1] }); }
 
     public void startSim()
     {
@@ -925,241 +1101,10 @@ namespace RPGFlightmare
     }
     public void quiteSim() { Application.Quit(); }
 
-    // Helper functions for point cloud
-    public void ButtonPointCloud()
-    {
-      SavePointCloud save_pointcloud = GetComponent<SavePointCloud>();
-      PointCloudTask(save_pointcloud);
-
-    }
     async void PointCloudTask(SavePointCloud save_pointcloud)
     {
       await save_pointcloud.GeneratePointCloud();
-      PointCloudSaved.SetActive(true);
-    }
-
-    // Helper functions to toggle flying camera variable
-
-    public void enableFlyingCam()
-    {
-      enable_flying_cam = true;
-      FlyingCamSettings();
-    }
-
-    public void disableFlyingCam()
-    {
-      enable_flying_cam = false;
-      FlyingCamSettings();
-    }
-
-    void FlyingCamSettings()
-    {
-      GameObject flying_cam = GameObject.Find("HDCamera");
-      if (flying_cam)
-      {
-        flying_cam.GetComponent<ExtendedFlycam>().enabled = enable_flying_cam;
-        Animator anim = flying_cam.GetComponent<Animator>();
-        if (anim) { anim.enabled = !enable_flying_cam; }
-      }
     }
 
   }
 }
-
-
-// backup code. -----
-//Modifier: Yunlong Song <song@ifi.uzh.ch>
-//Date: May 2019
-
-// void updateLandmarkVisibility()
-// {
-//     if (internal_state.readyToRender)
-//     {
-
-//         // Erase old set of landmarks
-//         state.landmarksInView = new List<Landmark_t>();
-
-//         // Get camera to cast from
-//         ObjectState_t internal_object_state = internal_state.getWrapperObject(state.cameras[0].ID, camera_template);
-//         Camera castingCamera = internal_object_state.gameObj.GetComponent<Camera>();
-//         Vector3 cameraPosition = internal_object_state.gameObj.transform.position;
-
-//         // Get camera collider
-//         Collider cameraCollider = internal_object_state.gameObj.GetComponent<Collider>();
-
-//         // Cull landmarks based on camera frustrum
-//         // Gives lookup table of screen positions.
-//         Dictionary<string, Vector3> visibleLandmarkScreenPositions = new Dictionary<string, Vector3>();
-
-//         foreach (KeyValuePair<string, GameObject> entry in internal_state.landmarkObjects)
-//         {
-//             Vector3 screenPoint = castingCamera.WorldToViewportPoint(entry.Value.transform.position);
-//             bool visible = screenPoint.z > 0 && screenPoint.x > 0 && screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
-//             if (visible)
-//             {
-//                 visibleLandmarkScreenPositions.Add(entry.Key, screenPoint);
-//             }
-//         }
-
-
-//         int numLandmarksInView = visibleLandmarkScreenPositions.Count();
-
-//         // Batch raytrace from landmarks to camera
-//         var results = new NativeArray<RaycastHit>(numLandmarksInView, Allocator.TempJob);
-//         var commands = new NativeArray<RaycastCommand>(numLandmarksInView, Allocator.TempJob);
-
-//         int i = 0;
-//         var visibleLandmarkScreenPosList = visibleLandmarkScreenPositions.ToArray();
-//         foreach (var elm in visibleLandmarkScreenPosList)
-//         {
-//             var landmark = internal_state.landmarkObjects[elm.Key];
-//             Vector3 origin = landmark.transform.position;
-//             Vector3 direction = cameraPosition - origin;
-
-//             commands[i] = new RaycastCommand(origin, direction, distance: direction.magnitude, maxHits: max_num_ray_collisions);
-//             i++;
-//         }
-
-//         // Run the raytrace commands
-//         JobHandle handle = RaycastCommand.ScheduleBatch(commands, results, 1, default(JobHandle));
-//         // Wait for the batch processing job to complete.
-//         // @TODO: Move to end of frame.
-//         handle.Complete();
-
-//         // Cull based on number of collisions
-//         // Remove if it collided with something
-//         for (int j = 0; j < numLandmarksInView; j++)
-//         {
-//             // Check collisions. NOTE: indexing is via N*max_hits with first null being end of hit list.
-//             RaycastHit batchedHit = results[j];
-//             if (batchedHit.collider == null)
-//             {
-//                 // No collisions here. Add it to the current state.
-//                 var landmark = visibleLandmarkScreenPosList[j];
-//                 Landmark_t landmarkScreenPosObject = new Landmark_t();
-
-//                 landmarkScreenPosObject.ID = landmark.Key;
-//                 landmarkScreenPosObject.position = Vector3ToList(landmark.Value);
-//                 state.landmarksInView.Add(landmarkScreenPosObject);
-
-//             } else if (batchedHit.collider == cameraCollider)
-//             {
-//                 // No collisions here. Add it to the current state.
-//                 var landmark = visibleLandmarkScreenPosList[j];
-//                 Landmark_t landmarkScreenPosObject = new Landmark_t();
-
-//                 landmarkScreenPosObject.ID = landmark.Key;
-//                 landmarkScreenPosObject.position = Vector3ToList(landmark.Value);
-//                 state.landmarksInView.Add(landmarkScreenPosObject);
-//             }
-
-//         }
-
-//         results.Dispose();
-//         commands.Dispose();
-//     }
-// }
-
-// void instantiateObjects()
-// {
-//     // Initialize additional objects
-//     foreach (var obj_state in settings.objects){
-//         // Get object
-//         ObjectState_t internal_object_state = internal_state.getWrapperObject(obj_state.ID, object_template);
-//         GameObject obj = internal_object_state.gameObj;
-//         // @TODO Set object size
-//         //obj.transform.localScale = ListToVector3(obj_state.size);
-//     }
-
-//     // Check if should load obstacle perturbation file.
-//     if (obstacle_perturbation_file.Length > 0) {
-//         using (var reader = new StreamReader(obstacle_perturbation_file)) {
-//             while (reader.Peek() >= 0) {
-//                 // Read line
-//                 string str;
-//                 str = reader.ReadLine();
-
-//                 // Parse line
-//                 string objectName = str.Split(':')[0];
-//                 string translationString = str.Split(':')[1];
-//                 float[] translationsFloat = Array.ConvertAll(translationString.Split(','), float.Parse);
-
-//                 // Find object
-//                 GameObject obj = GameObject.Find(objectName);
-//                 if (obj != null)
-//                 {
-//                     //// Check if object is statically batched. (NOT AVAILABLE IN STANDALONE BUILD)
-//                     //int flags = (int)GameObjectUtility.GetStaticEditorFlags(obj);
-//                     //if ((flags & 4)!= 0)
-//                     //{
-//                     //    // Gameobject is not movable!!!
-//                     //    Debug.LogError("WARNING: " + objectName + " is statically batched and not movable! Make sure the gameobject is only lightmap static.");
-//                     //} else
-//                     //{
-//                         // Translate and rotate object
-//                         obj.transform.Translate(-translationsFloat[1], 0, translationsFloat[0], Space.World);
-//                         obj.transform.Rotate(0, translationsFloat[2], 0, Space.World);
-
-//                     //}
-//                 }
-//             }
-//         }
-//     }
-//     if (outputLandmarkLocations)
-//     {
-//         // Output current locations.
-//         Dictionary<string, List<GameObject>> GateMarkers = new Dictionary<string, List<GameObject>>();
-
-//         // Find all landmarks and print to file.
-//         foreach (GameObject obj in GameObject.FindGameObjectsWithTag("IR_Markers"))
-//         {
-//             // Tag the landmarks
-//             string gateName = obj.transform.parent.parent.name;
-//             string landmarkID = obj.name;
-
-//             // Check if gate already exists.
-//             if (GateMarkers.ContainsKey(gateName))
-//             {
-//                 GateMarkers[gateName].Add(obj);
-//             }
-//             else
-//             {
-//                 List<GameObject> markerList = new List<GameObject>();
-//                 markerList.Add(obj);
-//                 GateMarkers.Add(gateName, markerList);
-//             }
-//         }
-
-//         // Print results
-//         //Write some text to the test.txt file
-//         StreamWriter writer = new StreamWriter("markerLocations.yaml", false);
-//         foreach (var pair in GateMarkers)
-//         {
-//             writer.WriteLine(pair.Key + ":");
-//             writer.Write("  location: [");
-
-//             int i = 0;
-//             // Sort landmark IDs
-//             foreach (GameObject marker in pair.Value.OrderBy(gobj=>gobj.name).ToList())
-//             {
-
-//                 // Convert vector from EUN to NWU.
-//                 Vector3 NWU = new Vector3(marker.transform.position.z, -marker.transform.position.x, marker.transform.position.y);
-
-//                 // Print out locations in yaml format.
-//                 writer.Write("[" + NWU.x + ", " + NWU.y + ", " + NWU.z + "]");
-//                 if (i < 3)
-//                 {
-//                     writer.Write(", ");
-//                 }
-//                 else
-//                 {
-//                     writer.WriteLine("]");
-//                 }
-//                 i++;
-//             }
-//         }
-//         writer.Close();
-//     }
-
-// }
