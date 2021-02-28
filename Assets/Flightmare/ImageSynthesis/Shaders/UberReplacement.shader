@@ -48,7 +48,7 @@ float4 Output(float depth01, float3 normal)
 	else if (_OutputMode == 2) // DepthCompressed
 	{
 		float linearZFromNear = Linear01FromEyeToLinear01FromNear(depth01); 
-		float k = 2.2; // conversion factor from gamma color space to linear
+		float k = 0.25; // compression factor
 		return pow(linearZFromNear, k);
 	}
 	else if (_OutputMode == 3) // DepthMultichannel
@@ -67,8 +67,6 @@ float4 Output(float depth01, float3 normal)
 	{
 		return depth01;
 	}
-
-
 	// unsupported _OutputMode
 	return float4(1, 0.5, 0.5, 1);
 }

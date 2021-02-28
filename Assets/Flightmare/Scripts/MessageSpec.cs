@@ -112,8 +112,6 @@ namespace MessageSpec
     public int width { get; set; }
     public int height { get; set; }
     public float fov { get; set; }
-    public List<float> nearClipPlane { get; set; }
-    public List<float> farClipPlane { get; set; }
     public float depthScale { get; set; }
     // transformation matrix
     public List<float> T_BC { get; set; }
@@ -122,6 +120,27 @@ namespace MessageSpec
     public List<bool> enabledLayers { get; set; }
     // Additional getters
     public bool isGrayscale { get { return (channels == 1) && (!isDepth); } }
+  }
+  public class EventCamera_t
+  {
+    public string ID { get; set; }
+    // Metadata
+    public int channels { get; set; }
+    public int width { get; set; }
+    public int height { get; set; }
+    public float fov { get; set; }
+    public float depthScale { get; set; }
+    // transformation matrix
+    public List<float> T_BC { get; set; }
+    public bool isDepth { get; set; }
+    public int outputIndex { get; set; }
+    public float Cm;
+    public float Cp;
+    public float sigma_Cp;
+    public float sigma_Cm;
+    public UInt64 refractory_period_ns;
+    public float log_eps;
+    // Additional getters
   }
 
   public class Lidar_t
@@ -143,8 +162,8 @@ namespace MessageSpec
     public List<float> rotation { get; set; }
     public List<float> size { get; set; }
     public List<Camera_t> cameras { get; set; }
+    public List<EventCamera_t> eventcameras { get; set; }
     public List<Lidar_t> lidars;
-    // public bool hasCollisionCheck = true;
     public bool hasVehicleCollision = false;
   }
 
@@ -181,7 +200,9 @@ namespace MessageSpec
     // we noly count the number of camera on the main vehicle. 
     public int numCameras { get; set; }
     public Camera_t mainCamera { get; set; }
-    // public List<Camera_t> cameras{ get; set; }
+    public EventCamera_t mainCamera_ { get; set; }
+    public int numEventCameras { get; set; }
+    public EventCamera_t eventCamera { get; set; }
     public int camHeight { get; set; }
     public int camWidth { get; set; }
     public int screenWidth { get; set; }
@@ -196,14 +217,9 @@ namespace MessageSpec
         mainVehicle = vehicles[(int)(numVehicles / 2)];
       }
       numCameras = mainVehicle.cameras.Count();
-      if (numCameras == 0)
-      {
-        camWidth = 1024;
-        camHeight = 764;
-        screenWidth = camWidth;
-        screenHeight = camHeight;
-      }
-      else if (numCameras >= 1)
+      numEventCameras = mainVehicle.eventcameras.Count();
+
+      if (numCameras >= 1)
       {
         mainCamera = mainVehicle.cameras[0];
         camWidth = mainCamera.width;
@@ -213,6 +229,22 @@ namespace MessageSpec
         screenWidth = camWidth;
         screenHeight = camHeight;
       }
+      else if (numEventCameras >= 1)
+      {
+        mainCamera_ = mainVehicle.eventcameras[0];
+        camWidth = mainCamera_.width;
+        camHeight = mainCamera_.height;
+        screenWidth = camWidth;
+        screenHeight = camHeight;
+      }
+      else if (numCameras == 0 && numEventCameras == 0)
+      {
+        camWidth = 1024;
+        camHeight = 764;
+        screenWidth = camWidth;
+        screenHeight = camHeight;
+      }
+
     }
   }
   public class SubMessage_t
@@ -239,6 +271,7 @@ namespace MessageSpec
   {
     public Int64 frame_id { get; set; }
     public List<Pub_Vehicle_t> pub_vehicles;
+    public float next_timestep { get; set; }
     public PubMessage_t(SettingsMessage_t settings)
     {
       pub_vehicles = new List<Pub_Vehicle_t>();
@@ -267,6 +300,30 @@ namespace MessageSpec
     public float resolution { get; set; }
     public string path { get; set; }
     public string file_name { get; set; }
+  }
+  [Serializable]
+  public struct Event_t
+  {
+    public int coord_x { get; set; }
+    public int coord_y { get; set; }
+    public int polarity { get; set; }
+    public Int32 time { get; set; }
+  };
+
+  public class EventsMessage_t
+  {
+    public List<Event_t> events { get; set; }
+    public EventsMessage_t(Event_t[] e)
+    {
+      events = e.OfType<Event_t>().ToList();//very slow
+    }
+  }
+  public class TimeStepMessage_t
+  {
+    public Int64 current_time { get; set; }
+
+    public Int64 next_timestep { get; set; }
+    public bool rgb_frame { get; set; }
   }
 
 }
