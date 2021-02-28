@@ -24,8 +24,8 @@ MonoBehaviour:
     value: {fileID: 0}
     defaultState: 1
   tonemapper:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 2
   toneCurveToeStrength:
     overrideState: 0
     value: 0
@@ -52,8 +52,8 @@ MonoBehaviour:
     overrideState: 0
     value: 1
   temperature:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 1.3
   tint:
     overrideState: 0
     value: 0
@@ -64,8 +64,8 @@ MonoBehaviour:
     overrideState: 0
     value: 0
   saturation:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 30.2
   brightness:
     overrideState: 0
     value: 0
@@ -76,7 +76,7 @@ MonoBehaviour:
     overrideState: 0
     value: 0
   mixerRedOutRedIn:
-    overrideState: 1
+    overrideState: 0
     value: 200
   mixerRedOutGreenIn:
     overrideState: 0
@@ -103,13 +103,13 @@ MonoBehaviour:
     overrideState: 0
     value: 100
   lift:
-    overrideState: 0
+    overrideState: 1
     value: {x: 1, y: 1, z: 1, w: 0}
   gamma:
-    overrideState: 0
+    overrideState: 1
     value: {x: 1, y: 1, z: 1, w: 0}
   gain:
-    overrideState: 0
+    overrideState: 1
     value: {x: 1, y: 1, z: 1, w: 0}
   masterCurve:
     overrideState: 0
@@ -1328,17 +1328,17 @@ MonoBehaviour:
     overrideState: 1
     value: 1
   mode:
-    overrideState: 0
+    overrideState: 1
     value: 0
   color:
-    overrideState: 0
+    overrideState: 1
     value: {r: 0, g: 0, b: 0, a: 1}
   center:
-    overrideState: 0
+    overrideState: 1
     value: {x: 0.5, y: 0.5}
   intensity:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 0.351
   smoothness:
     overrideState: 0
     value: 0.2
@@ -1372,8 +1372,8 @@ MonoBehaviour:
     overrideState: 1
     value: 1
   preset:
-    overrideState: 0
-    value: 2
+    overrideState: 1
+    value: 6
   maximumIterationCount:
     overrideState: 0
     value: 16
@@ -1387,10 +1387,10 @@ MonoBehaviour:
     overrideState: 1
     value: 100
   distanceFade:
-    overrideState: 1
+    overrideState: 0
     value: 0.5
   vignette:
-    overrideState: 1
+    overrideState: 0
     value: 0.5
 --- !u!114 &11400000
 MonoBehaviour:
@@ -1433,8 +1433,8 @@ MonoBehaviour:
     overrideState: 1
     value: 1
   color:
-    overrideState: 0
-    value: {r: 0.7689174, g: 0.7689174, b: 0.7689174, a: 1}
+    overrideState: 1
+    value: {r: 0.2264151, g: 0.15592737, b: 0.15592737, a: 1}
   ambientOnly:
     overrideState: 1
     value: 1
@@ -1476,11 +1476,11 @@ MonoBehaviour:
     overrideState: 1
     value: 1
   intensity:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 1
   threshold:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 3
   softKnee:
     overrideState: 0
     value: 0.5

@@ -62,7 +62,7 @@ namespace RPGFlightmare
     public int video_client_port = video_client_default_port;
     public const int connection_timeout_seconds = connection_timeout_seconds_default;
 
-    public GameObject kamera;
+    public GameObject ecamera;
     public GameObject HD_camera;
 
     public GameObject quad_template;  // Main vehicle template
@@ -460,7 +460,7 @@ namespace RPGFlightmare
         {
           string camera_ID = camera.ID;
           // Get the camera object, create if not exist
-          ObjectState_t internal_object_state = internal_state.getWrapperObject(camera_ID, kamera);
+          ObjectState_t internal_object_state = internal_state.getWrapperObject(camera_ID, ecamera);
           GameObject obj = internal_object_state.gameObj;
         }
       }
@@ -500,7 +500,7 @@ namespace RPGFlightmare
         foreach (EventCamera_t camera in vehicle_i.eventcameras)
         {
           // Get camera object
-          GameObject obj_ = internal_state.getGameobject(camera.ID, kamera);
+          GameObject obj_ = internal_state.getGameobject(camera.ID, ecamera);
           var currentCam = obj_.GetComponent<Camera>();
           currentCam.fieldOfView = camera.fov;
           // apply translation and rotation;
@@ -594,7 +594,7 @@ namespace RPGFlightmare
           {
             vehicle_count += 1;
             // Get camera object
-            GameObject obj = internal_state.getGameobject(camera.ID, kamera);
+            GameObject obj = internal_state.getGameobject(camera.ID, ecamera);
             // 
             var currentCam = obj.GetComponent<Camera>();
             currentCam.fieldOfView = camera.fov;
@@ -846,7 +846,7 @@ namespace RPGFlightmare
           vehicle_count += 1;
           {
             // Get object
-            GameObject obj = internal_state.getGameobject(camera.ID, kamera);
+            GameObject obj = internal_state.getGameobject(camera.ID, ecamera);
             var currentCam = obj.GetComponent<Camera>();
             currentCam.enabled = true;
             
@@ -941,7 +941,7 @@ namespace RPGFlightmare
           vehicle_count += 1;
           GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
           //get camera object
-          GameObject obj = internal_state.getGameobject(cam_config.ID, kamera);
+          GameObject obj = internal_state.getGameobject(cam_config.ID, ecamera);
 
           var current_cam = obj.GetComponent<Camera>();
           // get eventcamera component
