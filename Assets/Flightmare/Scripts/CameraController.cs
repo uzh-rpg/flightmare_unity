@@ -899,228 +899,228 @@ namespace RPGFlightmare
         }
         img_post_processing.OnSceneChange();
       }
-
-      void sendReady()
+    }
+    void sendReady()
+    {
+      ReadyMessage_t metadata = new ReadyMessage_t(internal_state.readyToRender);
+      var msg = new NetMQMessage();
+      msg.Append(JsonConvert.SerializeObject(metadata));
+      if (push_socket.HasOut)
       {
-        ReadyMessage_t metadata = new ReadyMessage_t(internal_state.readyToRender);
-        var msg = new NetMQMessage();
-        msg.Append(JsonConvert.SerializeObject(metadata));
-        if (push_socket.HasOut)
-        {
-          push_socket.TrySendMultipartMessage(msg);
-        }
+        push_socket.TrySendMultipartMessage(msg);
       }
+    }
 
-      // Reads a scene frame from the GPU backbuffer and sends it via ZMQ.
-      void sendFrameOnWire()
+    // Reads a scene frame from the GPU backbuffer and sends it via ZMQ.
+    void sendFrameOnWire()
+    {
+      // Get metadata
+      pub_message.frame_id = sub_message.frame_id;
+      // Create packet metadata
+      var msg = new NetMQMessage();
+      msg.Append(JsonConvert.SerializeObject(pub_message));
+
+      int vehicle_count = 0;
+      foreach (var vehicle_i in settings.vehicles)
       {
-        // Get metadata
-        pub_message.frame_id = sub_message.frame_id;
-        // Create packet metadata
-        var msg = new NetMQMessage();
-        msg.Append(JsonConvert.SerializeObject(pub_message));
-
-        int vehicle_count = 0;
-        foreach (var vehicle_i in settings.vehicles)
+        foreach (var cam_config in vehicle_i.cameras)
         {
-          foreach (var cam_config in vehicle_i.cameras)
-          {
-            vehicle_count += 1;
-            // Length of RGB slice
-            GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
-            GameObject obj = internal_state.getGameobject(cam_config.ID, HD_camera);
-            var current_cam = obj.GetComponent<Camera>();
-            var raw = readImageFromHiddenCamera(current_cam, cam_config);
-            msg.Append(raw);
+          vehicle_count += 1;
+          // Length of RGB slice
+          GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
+          GameObject obj = internal_state.getGameobject(cam_config.ID, HD_camera);
+          var current_cam = obj.GetComponent<Camera>();
+          var raw = readImageFromHiddenCamera(current_cam, cam_config);
+          msg.Append(raw);
 
-            int layer_id = 0;
+          int layer_id = 0;
+          {
+            foreach (var layer_on in cam_config.enabledLayers)
             {
-              foreach (var layer_on in cam_config.enabledLayers)
+              if (layer_on)
               {
-                if (layer_on)
+                string filter_ID = cam_config.ID + "_" + layer_id.ToString();
                 {
-                  string filter_ID = cam_config.ID + "_" + layer_id.ToString();
-                  {
-                    var rawimage = img_post_processing.getRawImage(internal_state.camera_filters[filter_ID],
-                        settings.camWidth, settings.camHeight, img_post_processing.image_modes[layer_id]);
-                    msg.Append(rawimage);
-                  }
-
+                  var rawimage = img_post_processing.getRawImage(internal_state.camera_filters[filter_ID],
+                      settings.camWidth, settings.camHeight, img_post_processing.image_modes[layer_id]);
+                  msg.Append(rawimage);
                 }
-                layer_id += 1;
+
               }
-            }
-
-          }
-          foreach (var cam_config in vehicle_i.eventcameras)
-          {
-            vehicle_count += 1;
-            GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
-            //get camera object
-            GameObject obj = internal_state.getGameobject(cam_config.ID, ecamera);
-
-            var current_cam = obj.GetComponent<Camera>();
-            // get eventcamera component
-            var script = obj.GetComponent<eventsCompute>();
-            // get rgb image of eventcamera
-            var raw = readImageFromHiddenCamera(current_cam, cam_config);
-
-            var cam_name = cam_config.ID + "_" + "of";
-            // internal_state.camera_filters[cam_name] is the camera needed
-            // compute next timestep
-            Int64 delta_time = img_post_processing.getDeltaTime(internal_state.camera_filters[cam_name], settings.camWidth, settings.camHeight, deltatime);
-
-            bool entering_timefct = false;
-            // control whether the time step applies or whther a general image renderin is necessary
-            if ((time_last_frame + framerate) <= (delta_time + current_time))
-            {
-              time_message.next_timestep = (time_last_frame + framerate - current_time);
-              entering_timefct = true;
-            }
-            else time_message.next_timestep = delta_time;
-            msg.Append(raw);
-
-            var buff = script.getoutput();
-
-            if (script.GetTime() != current_time)
-            {
-              Debug.LogError("time functions do not match");
-            }
-
-            var buff_ = new EventsMessage_t(buff);
-            var bytes = JsonConvert.SerializeObject(buff_);
-            msg.Append(bytes);
-            // TODO: check which time step applies rgb or the other
-            time_message.rgb_frame = storing_frames;
-            time_message.current_time = current_time;
-
-            msg.Append(JsonConvert.SerializeObject(time_message));
-            // update time function based on 
-            if (entering_timefct)
-            {
-              UpdateTimeFct(time_message.next_timestep, time_message.rgb_frame);
-              storing_frames = true;
-            }
-            else
-            {
-              UpdateTimeFct(time_message.next_timestep);
-              storing_frames = false;
+              layer_id += 1;
             }
           }
+
         }
-        if (push_socket.HasOut)
+        foreach (var cam_config in vehicle_i.eventcameras)
         {
-          push_socket.SendMultipartMessage(msg);
-        }
-      }
+          vehicle_count += 1;
+          GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
+          //get camera object
+          GameObject obj = internal_state.getGameobject(cam_config.ID, ecamera);
 
-      byte[] readImageFromScreen(Camera_t cam_config)
-      {
-        rendered_frame.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
-        rendered_frame.Apply();
-        byte[] raw = rendered_frame.GetRawTextureData();
-        return raw;
-      }
-      byte[] readImageFromHiddenCamera(Camera subcam, Camera_t cam_config)
-      {
-        var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24);
-        var prevActiveRT = RenderTexture.active;
-        var prevCameraRT = subcam.targetTexture;
-        RenderTexture.active = templRT;
-        subcam.targetTexture = templRT;
-        subcam.pixelRect = new Rect(0, 0,
-            cam_config.width, cam_config.height);
-        subcam.fieldOfView = cam_config.fov;
+          var current_cam = obj.GetComponent<Camera>();
+          // get eventcamera component
+          var script = obj.GetComponent<eventsCompute>();
+          // get rgb image of eventcamera
+          var raw = readImageFromHiddenCamera(current_cam, cam_config);
 
-        subcam.Render();
-        var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
-        image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
-        image.Apply();
-        byte[] raw = image.GetRawTextureData();
-        //
-        subcam.targetTexture = prevCameraRT;
-        RenderTexture.active = prevActiveRT;
-        //
-        RenderTexture.ReleaseTemporary(templRT);
-        UnityEngine.Object.Destroy(image);
-        //
-        return raw;
-      }
-      byte[] readImageFromHiddenCamera(Camera subcam, EventCamera_t cam_config)
-      {
-        var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm, 8);
-        var prevActiveRT = RenderTexture.active;
-        var prevCameraRT = subcam.targetTexture;
-        RenderTexture.active = templRT;
-        subcam.targetTexture = templRT;
+          var cam_name = cam_config.ID + "_" + "of";
+          // internal_state.camera_filters[cam_name] is the camera needed
+          // compute next timestep
+          Int64 delta_time = img_post_processing.getDeltaTime(internal_state.camera_filters[cam_name], settings.camWidth, settings.camHeight, deltatime);
 
-        subcam.pixelRect = new Rect(0, 0,
-            cam_config.width, cam_config.height);
-        subcam.fieldOfView = cam_config.fov;
-
-        subcam.Render();
-        var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
-        image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
-        image.Apply();
-        byte[] raw = image.GetRawTextureData();
-        subcam.targetTexture = prevCameraRT;
-        RenderTexture.active = prevActiveRT;
-        RenderTexture.ReleaseTemporary(templRT);
-        UnityEngine.Object.Destroy(image);
-        return raw;
-      }
-
-      /* ==================================
-      * FlightGoggles Helper Functions 
-      * ==================================
-      */
-
-      // Helper function for getting command line arguments
-      private static string GetArg(string name, string default_return)
-      {
-        var args = System.Environment.GetCommandLineArgs();
-        for (int i = 0; i < args.Length; i++)
-        {
-          if (args[i] == name && args.Length > i + 1)
+          bool entering_timefct = false;
+          // control whether the time step applies or whther a general image renderin is necessary
+          if ((time_last_frame + framerate) <= (delta_time + current_time))
           {
-            return args[i + 1];
+            time_message.next_timestep = (time_last_frame + framerate - current_time);
+            entering_timefct = true;
+          }
+          else time_message.next_timestep = delta_time;
+          msg.Append(raw);
+
+          var buff = script.getoutput();
+
+          if (script.GetTime() != current_time)
+          {
+            Debug.LogError("time functions do not match");
+          }
+
+          var buff_ = new EventsMessage_t(buff);
+          var bytes = JsonConvert.SerializeObject(buff_);
+          msg.Append(bytes);
+          // TODO: check which time step applies rgb or the other
+          time_message.rgb_frame = storing_frames;
+          time_message.current_time = current_time;
+
+          msg.Append(JsonConvert.SerializeObject(time_message));
+          // update time function based on 
+          if (entering_timefct)
+          {
+            UpdateTimeFct(time_message.next_timestep, time_message.rgb_frame);
+            storing_frames = true;
+          }
+          else
+          {
+            UpdateTimeFct(time_message.next_timestep);
+            storing_frames = false;
           }
         }
-        return default_return;
       }
-
-      // Helper functions for converting list -> vector
-      public static Vector3 ListToVector3(IList<float> list) { return new Vector3(list[0], list[1], list[2]); }
-      public static Quaternion ListToQuaternion(IList<float> list) { return new Quaternion(list[0], list[1], list[2], list[3]); }
-      public static Matrix4x4 ListToMatrix4x4(IList<float> list)
+      if (push_socket.HasOut)
       {
-        Matrix4x4 rot_mat = Matrix4x4.zero;
-        rot_mat[0, 0] = list[0]; rot_mat[0, 1] = list[1]; rot_mat[0, 2] = list[2]; rot_mat[0, 3] = list[3];
-        rot_mat[1, 0] = list[4]; rot_mat[1, 1] = list[5]; rot_mat[1, 2] = list[6]; rot_mat[1, 3] = list[7];
-        rot_mat[2, 0] = list[8]; rot_mat[2, 1] = list[9]; rot_mat[2, 2] = list[10]; rot_mat[2, 3] = list[11];
-        rot_mat[3, 0] = list[12]; rot_mat[3, 1] = list[13]; rot_mat[3, 2] = list[14]; rot_mat[3, 3] = list[15];
-        return rot_mat;
+        push_socket.SendMultipartMessage(msg);
       }
-      public static Color ListHSVToColor(IList<float> list) { return Color.HSVToRGB(list[0], list[1], list[2]); }
+    }
 
-      // Helper functions for converting  vector -> list
-      public static List<float> Vector3ToList(Vector3 vec) { return new List<float>(new float[] { vec[0], vec[1], vec[2] }); }
-      public static List<float> Vector2ToList(Vector2 vec) { return new List<float>(new float[] { vec[0], vec[1] }); }
+    byte[] readImageFromScreen(Camera_t cam_config)
+    {
+      rendered_frame.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
+      rendered_frame.Apply();
+      byte[] raw = rendered_frame.GetRawTextureData();
+      return raw;
+    }
+    byte[] readImageFromHiddenCamera(Camera subcam, Camera_t cam_config)
+    {
+      var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24);
+      var prevActiveRT = RenderTexture.active;
+      var prevCameraRT = subcam.targetTexture;
+      RenderTexture.active = templRT;
+      subcam.targetTexture = templRT;
+      subcam.pixelRect = new Rect(0, 0,
+          cam_config.width, cam_config.height);
+      subcam.fieldOfView = cam_config.fov;
 
-      public void startSim()
+      subcam.Render();
+      var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
+      image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
+      image.Apply();
+      byte[] raw = image.GetRawTextureData();
+      //
+      subcam.targetTexture = prevCameraRT;
+      RenderTexture.active = prevActiveRT;
+      //
+      RenderTexture.ReleaseTemporary(templRT);
+      UnityEngine.Object.Destroy(image);
+      //
+      return raw;
+    }
+    byte[] readImageFromHiddenCamera(Camera subcam, EventCamera_t cam_config)
+    {
+      var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm, 8);
+      var prevActiveRT = RenderTexture.active;
+      var prevCameraRT = subcam.targetTexture;
+      RenderTexture.active = templRT;
+      subcam.targetTexture = templRT;
+
+      subcam.pixelRect = new Rect(0, 0,
+          cam_config.width, cam_config.height);
+      subcam.fieldOfView = cam_config.fov;
+
+      subcam.Render();
+      var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
+      image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
+      image.Apply();
+      byte[] raw = image.GetRawTextureData();
+      subcam.targetTexture = prevCameraRT;
+      RenderTexture.active = prevActiveRT;
+      RenderTexture.ReleaseTemporary(templRT);
+      UnityEngine.Object.Destroy(image);
+      return raw;
+    }
+
+    /* ==================================
+    * FlightGoggles Helper Functions 
+    * ==================================
+    */
+
+    // Helper function for getting command line arguments
+    private static string GetArg(string name, string default_return)
+    {
+      var args = System.Environment.GetCommandLineArgs();
+      for (int i = 0; i < args.Length; i++)
       {
-        ConnectToClient(input_ip.text);
-        // Init simple splash screen
-        Text text_obj = splash_screen.GetComponentInChildren<Text>(true);
-        text_obj.text = "Connected, waiting for ROS client...";
-
+        if (args[i] == name && args.Length > i + 1)
+        {
+          return args[i + 1];
+        }
       }
-      public void quiteSim() { Application.Quit(); }
+      return default_return;
+    }
 
-      async void PointCloudTask(SavePointCloud save_pointcloud)
-      {
-        await save_pointcloud.GeneratePointCloud();
-      }
+    // Helper functions for converting list -> vector
+    public static Vector3 ListToVector3(IList<float> list) { return new Vector3(list[0], list[1], list[2]); }
+    public static Quaternion ListToQuaternion(IList<float> list) { return new Quaternion(list[0], list[1], list[2], list[3]); }
+    public static Matrix4x4 ListToMatrix4x4(IList<float> list)
+    {
+      Matrix4x4 rot_mat = Matrix4x4.zero;
+      rot_mat[0, 0] = list[0]; rot_mat[0, 1] = list[1]; rot_mat[0, 2] = list[2]; rot_mat[0, 3] = list[3];
+      rot_mat[1, 0] = list[4]; rot_mat[1, 1] = list[5]; rot_mat[1, 2] = list[6]; rot_mat[1, 3] = list[7];
+      rot_mat[2, 0] = list[8]; rot_mat[2, 1] = list[9]; rot_mat[2, 2] = list[10]; rot_mat[2, 3] = list[11];
+      rot_mat[3, 0] = list[12]; rot_mat[3, 1] = list[13]; rot_mat[3, 2] = list[14]; rot_mat[3, 3] = list[15];
+      return rot_mat;
+    }
+    public static Color ListHSVToColor(IList<float> list) { return Color.HSVToRGB(list[0], list[1], list[2]); }
+
+    // Helper functions for converting  vector -> list
+    public static List<float> Vector3ToList(Vector3 vec) { return new List<float>(new float[] { vec[0], vec[1], vec[2] }); }
+    public static List<float> Vector2ToList(Vector2 vec) { return new List<float>(new float[] { vec[0], vec[1] }); }
+
+    public void startSim()
+    {
+      ConnectToClient(input_ip.text);
+      // Init simple splash screen
+      Text text_obj = splash_screen.GetComponentInChildren<Text>(true);
+      text_obj.text = "Connected, waiting for ROS client...";
 
     }
+    public void quiteSim() { Application.Quit(); }
+
+    async void PointCloudTask(SavePointCloud save_pointcloud)
+    {
+      await save_pointcloud.GeneratePointCloud();
+    }
+
   }
+}
