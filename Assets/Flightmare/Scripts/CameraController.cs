@@ -882,9 +882,7 @@ namespace RPGFlightmare
           }
         }
       }
-      img_post_processing.OnSceneChange();
     }
-
     void sendReady()
     {
       ReadyMessage_t metadata = new ReadyMessage_t(internal_state.readyToRender);
@@ -917,6 +915,10 @@ namespace RPGFlightmare
           var current_cam = obj.GetComponent<Camera>();
           var raw = readImageFromHiddenCamera(current_cam, cam_config);
           msg.Append(raw);
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix merge probs
           int layer_id = 0;
           {
             foreach (var layer_on in cam_config.enabledLayers)
@@ -1041,7 +1043,7 @@ namespace RPGFlightmare
       subcam.pixelRect = new Rect(0, 0,
           cam_config.width, cam_config.height);
       subcam.fieldOfView = cam_config.fov;
-      
+
       subcam.Render();
       var image = new Texture2D(cam_config.width, cam_config.height, TextureFormat.RGB24, false, true);
       image.ReadPixels(new Rect(0, 0, cam_config.width, cam_config.height), 0, 0);
