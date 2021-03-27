@@ -37,29 +37,30 @@ namespace RPGFlightmare
   public class CameraController : MonoBehaviour
   {
     // ==============================================================================
-    // Default Parameters
+    // Default Parameters 
     // ==============================================================================
     [HideInInspector]
     public const int pose_client_default_port = 10253;
     [HideInInspector]
     public const int video_client_default_port = 10254;
     [HideInInspector]
-    public int pose_client_port = 10253;
-    [HideInInspector]
-    public int video_client_port = 10254;
-    [HideInInspector]
     public const string client_ip_default = "127.0.0.1";
     [HideInInspector]
     public const string client_ip_pref_key = "client_ip";
     [HideInInspector]
-    public const int connection_timeout_seconds = 5;
+    public const int connection_timeout_seconds_default = 5;
     [HideInInspector]
     public string rpg_dsim_version = "";
 
     // ==============================================================================
     // Public Parameters
     // ==============================================================================
+
+    // Inspector default parameters
     public string client_ip = client_ip_default;
+    public int pose_client_port = pose_client_default_port;
+    public int video_client_port = video_client_default_port;
+    public const int connection_timeout_seconds = connection_timeout_seconds_default;
 
     public GameObject ecamera;
     public GameObject HD_camera;
@@ -309,7 +310,7 @@ namespace RPGFlightmare
             // Update position of game objects.
             updateObjectPositions();
             // Do collision detection
-            // updateVehicleCollisions();
+            updateVehicleCollisions();
             // Compute sensor data
             updateLidarData();
             //
@@ -579,11 +580,12 @@ namespace RPGFlightmare
             //
             if (vehicle_count == activate_vehicle_cam)
             {
-              obj.SetActive(true);
+              currentCam.targetDisplay = 0;
+
             }
             else
             {
-              obj.SetActive(false);
+              currentCam.targetDisplay = 1;
             }
           }
           vehicle_count = 0;
@@ -649,13 +651,15 @@ namespace RPGFlightmare
           GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
           Vector3 newPos = main_vehicle.transform.position + thirdPV_cam_offset;
           tpv_obj.transform.position = Vector3.Slerp(tpv_obj.transform.position, newPos, 0.5f);
+          var tpv_cam = tpv_obj.GetComponent<Camera>();
           if ((activate_vehicle_cam == 0) || (settings.numCameras == 0 && settings.numEventCameras == 0))
           {
-            tpv_obj.SetActive(true);
+            tpv_cam.targetDisplay = 0;
+
           }
           else
           {
-            tpv_obj.SetActive(false);
+            tpv_cam.targetDisplay = 1;
           }
         }
 
@@ -681,7 +685,6 @@ namespace RPGFlightmare
     {
       if (internal_state.readyToRender)
       {
-        // var raycastingVehicle = sub_message.vehicles.Where(obj => obj.hasCollisionCheck);
         int vehicle_count = 0;
         foreach (var vehicl_i in settings.vehicles)
         {
@@ -763,13 +766,14 @@ namespace RPGFlightmare
         c.enabled = true;
       }
       // Disable unneeded vehicle colliders
-      // var nonRaycastingVehicles = settings.vehicles.Where(obj => !obj.hasCollisionCheck);
-      // foreach (Vehicle_t vehicle in nonRaycastingVehicles){
-      //     ObjectState_t internal_object_state = internal_state.getWrapperObject(vehicle.ID, quad_template);
-      //     // Get vehicle collider
-      //     Collider vehicleCollider = internal_object_state.gameObj.GetComponent<Collider>();
-      //     vehicleCollider.enabled = false;
-      // }
+      var nonRaycastingVehicles = settings.vehicles.Where(obj => !obj.hasCollisionCheck);
+      foreach (Vehicle_t vehicle in nonRaycastingVehicles)
+      {
+        ObjectState_t internal_object_state = internal_state.getWrapperObject(vehicle.ID, quad_template);
+        // Get vehicle collider
+        Collider vehicleCollider = internal_object_state.gameObj.GetComponent<Collider>();
+        vehicleCollider.enabled = false;
+      }
       //UNload unused assets
       Resources.UnloadUnusedAssets();
     }
@@ -814,11 +818,12 @@ namespace RPGFlightmare
             // enable Camera.
             if (vehicle_count == activate_vehicle_cam)
             {
-              obj.SetActive(true);
+              currentCam.targetDisplay = 0;
+
             }
             else
             {
-              obj.SetActive(false);
+              currentCam.targetDisplay = 1;
             }
             int layer_id = 0;
             foreach (var layer_on in camera.enabledLayers)
@@ -846,7 +851,6 @@ namespace RPGFlightmare
             GameObject obj = internal_state.getGameobject(camera.ID, ecamera);
             var currentCam = obj.GetComponent<Camera>();
             currentCam.enabled = true;
-            
             // Make sure camera renders to the correct portion of the screen.
             // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0, 
             // settings.camWidth * (camera.outputIndex+1), settings.camHeight);
@@ -877,11 +881,24 @@ namespace RPGFlightmare
 
 
           }
-        }
-      }
-      img_post_processing.OnSceneChange();
-    }
 
+
+          GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
+          tpv_obj.GetComponent<Camera>().pixelRect = new Rect(0, 0,
+                  settings.screenWidth, settings.screenHeight);
+          var tpv_cam = tpv_obj.GetComponent<Camera>();
+          if ((activate_vehicle_cam == 0) || ((settings.numCameras == 0) && settings.numEventCameras == 0))
+          {
+            tpv_cam.targetDisplay = 0;
+          }
+          else
+          {
+            tpv_cam.targetDisplay = 1;
+          }
+        }
+        img_post_processing.OnSceneChange();
+      }
+    }
     void sendReady()
     {
       ReadyMessage_t metadata = new ReadyMessage_t(internal_state.readyToRender);

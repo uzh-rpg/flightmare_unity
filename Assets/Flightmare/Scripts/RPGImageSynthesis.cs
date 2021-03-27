@@ -103,24 +103,40 @@ namespace RPGFlightmare
       go.transform.parent = mainCam.transform;
       go.transform.localPosition = new Vector3(0, 0, 0);
       go.transform.localEulerAngles = new Vector3(0, 0, 0);
-
       var newCamera = go.GetComponent<Camera>();
 
-      var mainCamera = mainCam.GetComponent<Camera>();
-      if (!(mainCamera == newCamera))
-      {
-        // cleanup capturing camera
-        newCamera.RemoveAllCommandBuffers();
-        // copy all "main" camera parameters into capturing camera
-        newCamera.CopyFrom(mainCamera);
-        // set targetDisplay here since it gets overriden by CopyFrom()
-        newCamera.targetDisplay = target_display++;
-        Debug.Log(newCamera.name + " targetdisplay: " + newCamera.targetDisplay);
-      }
       //
       updateCameraFilter(newCamera, image_mode);
 
       //
+      go.transform.localPosition = new Vector3(0, 0, 0);
+      go.transform.localEulerAngles = new Vector3(0, 0, 0);
+
+      mainCam.GetComponent<Camera>();
+
+
+      var mainCamera = mainCam.GetComponent<Camera>();
+      if (!(mainCamera == newCamera))
+      {
+        newCamera.RemoveAllCommandBuffers();
+        newCamera.CopyFrom(mainCamera);
+        newCamera.targetDisplay = target_display++;
+        Debug.Log(newCamera.name + " targetdisplay: " + newCamera.targetDisplay);
+
+      }
+      return newCamera;
+    }
+
+    public Camera CreateHiddenCameras(string name)
+    {
+      var go = new GameObject(name, typeof(Camera));
+      go.hideFlags = HideFlags.HideAndDontSave;
+      go.transform.parent = transform;
+
+      go.transform.localPosition = new Vector3(0, 0, 0);
+      go.transform.localEulerAngles = new Vector3(0, 0, 0);
+
+      var newCamera = go.GetComponent<Camera>();
       return newCamera;
     }
 
@@ -196,19 +212,6 @@ namespace RPGFlightmare
         Debug.Log(newCamera.name + " targetdisplay: " + newCamera.targetDisplay);
 
       }
-      return newCamera;
-    }
-
-    public Camera CreateHiddenCameras(string name)
-    {
-      var go = new GameObject(name, typeof(Camera));
-      go.hideFlags = HideFlags.HideAndDontSave;
-      go.transform.parent = transform;
-
-      go.transform.localPosition = new Vector3(0, 0, 0);
-      go.transform.localEulerAngles = new Vector3(0, 0, 0);
-
-      var newCamera = go.GetComponent<Camera>();
       return newCamera;
     }
 
