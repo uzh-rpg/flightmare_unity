@@ -119,8 +119,12 @@ namespace RPGFlightmare
       }
       //
       updateCameraFilter(newCamera, image_mode);
-
-      //
+      newCamera.fieldOfView = camFOV;
+      // newCamera.nearClipPlane = nearClipPlane;
+      // newCamera.farClipPlane = farClipPlane;
+      
+      updateCameraFilter(newCamera, image_mode);
+      // newCamera.targetDisplay = 1;
       return newCamera;
     }
 

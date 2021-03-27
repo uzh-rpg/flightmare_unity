@@ -164,6 +164,7 @@ namespace MessageSpec
     public List<Camera_t> cameras { get; set; }
     public List<EventCamera_t> eventcameras { get; set; }
     public List<Lidar_t> lidars;
+    public bool hasCollisionCheck = true;
     public bool hasVehicleCollision = false;
   }
 
