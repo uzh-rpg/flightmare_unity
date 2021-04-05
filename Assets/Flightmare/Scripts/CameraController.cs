@@ -64,6 +64,7 @@ namespace RPGFlightmare
 
     public GameObject ecamera;
     public GameObject HD_camera;
+    public GameObject PointCloudSaved;
 
     public GameObject quad_template;  // Main vehicle template
     public GameObject gate_template;  // Main vehicle template
@@ -78,6 +79,7 @@ namespace RPGFlightmare
     private bool socket_initialized = false;
     // setting message is also a kind of sub message,
     // but we only subscribe it for initialization.
+    public bool enable_flying_cam = false;
     private SettingsMessage_t settings; // subscribed for initialization
     private SubMessage_t sub_message;  // subscribed for update
     private PubMessage_t pub_message; // publish messages, e.g., images, collision, etc.
@@ -141,6 +143,7 @@ namespace RPGFlightmare
           ConnectToClient(client_ip);
         }
         Screen.fullScreen = false;
+        Screen.SetResolution(1024, 768, false);
       }
       else
       {
@@ -206,8 +209,6 @@ namespace RPGFlightmare
 
     public void ConnectToClient(string inputIPString)
     {
-      // pose_client_port=10270;
-      // video_client_port=10271;
       Debug.Log("Trying to connect to: " + inputIPString);
       string pose_host_address = "tcp://" + inputIPString + ":" + pose_client_port.ToString();
       string video_host_address = "tcp://" + inputIPString + ":" + video_client_port.ToString();
@@ -246,7 +247,6 @@ namespace RPGFlightmare
     */
     void Update()
     {
-      // Debug.LogError("Update: " + Time.deltaTime);
       if (pull_socket.HasIn || socket_initialized)
       {
         // if (splash_screen.activeSelf) splash_screen.SetActive(false);
@@ -483,6 +483,8 @@ namespace RPGFlightmare
           GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
           var currentCam = obj.GetComponent<Camera>();
           currentCam.fieldOfView = camera.fov;
+          currentCam.nearClipPlane = camera.nearClipPlane[0];
+          currentCam.farClipPlane = camera.farClipPlane[0];
           // apply translation and rotation;
           var translation = ListToVector3(vehicle_i.position);
           var quaternion = ListToQuaternion(vehicle_i.rotation);
@@ -537,6 +539,7 @@ namespace RPGFlightmare
       if (internal_state.readyToRender)
       {
         // always activate vehcile cam  
+        if (Input.GetKeyDown(KeyCode.Space))
         {
           activate_vehicle_cam = 1;
           if (activate_vehicle_cam > settings.numVehicles * settings.numCameras)
@@ -560,12 +563,6 @@ namespace RPGFlightmare
             // apply translation and rotation;
             var translation = ListToVector3(vehicle_i.position);
             var quaternion = ListToQuaternion(vehicle_i.rotation);
-            // Debug.Log(vehicle_i.ID);
-            // Debug.Log(vehicle_i.rotation[0]);
-            // Debug.Log(vehicle_i.rotation[1]);
-            // Debug.Log(vehicle_i.rotation[2]);
-            // Debug.Log(vehicle_i.rotation[3]);
-            // Debug.Log(quaternion.eulerAngles);
             Quaternion unity_quat = Quaternion.Euler(quaternion.eulerAngles);
             var scale = new Vector3(1, 1, 1);
             Matrix4x4 T_WB = Matrix4x4.TRS(translation, unity_quat, scale);
@@ -809,12 +806,11 @@ namespace RPGFlightmare
             // Get object
             GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
             var currentCam = obj.GetComponent<Camera>();
-            Debug.Log("settins width and height " + settings.camHeight + "/" + settings.camWidth);
             // Make sure camera renders to the correct portion of the screen.
-            // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0,
-            //   settings.camWidth * (camera.outputIndex + 1), settings.camHeight);
-            // currentCam.pixelRect = new Rect(0, 0,
-            //     settings.camWidth, settings.camHeight);
+            currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0,
+              settings.camWidth * (camera.outputIndex + 1), settings.camHeight);
+            currentCam.pixelRect = new Rect(0, 0,
+                settings.camWidth, settings.camHeight);
             // enable Camera.
             if (vehicle_count == activate_vehicle_cam)
             {
@@ -832,7 +828,7 @@ namespace RPGFlightmare
               {
                 string filter_ID = camera.ID + "_" + layer_id.ToString();
                 var cam_filter = img_post_processing.CreateHiddenCamera(filter_ID,
-                    img_post_processing.image_modes[layer_id], camera.fov, currentCam);
+                                    img_post_processing.image_modes[layer_id], camera.fov, camera.nearClipPlane[layer_id + 1], camera.farClipPlane[layer_id + 1], currentCam);
                 if (!internal_state.camera_filters.ContainsKey(filter_ID))
                 {
                   internal_state.camera_filters[filter_ID] = cam_filter;
@@ -963,7 +959,7 @@ namespace RPGFlightmare
           // get eventcamera component
           var script = obj.GetComponent<eventsCompute>();
           // get rgb image of eventcamera
-          var raw = readImageFromHiddenCamera(current_cam, cam_config);
+          var raw = readImageFromHiddenEventCamera(current_cam, cam_config);
 
           var cam_name = cam_config.ID + "_" + "of";
           // internal_state.camera_filters[cam_name] is the camera needed
@@ -1046,7 +1042,7 @@ namespace RPGFlightmare
       //
       return raw;
     }
-    byte[] readImageFromHiddenCamera(Camera subcam, EventCamera_t cam_config)
+    byte[] readImageFromHiddenEventCamera(Camera subcam, EventCamera_t cam_config)
     {
       var templRT = RenderTexture.GetTemporary(cam_config.width, cam_config.height, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm, 8);
       var prevActiveRT = RenderTexture.active;
@@ -1117,9 +1113,42 @@ namespace RPGFlightmare
     }
     public void quiteSim() { Application.Quit(); }
 
+    // Helper functions for point cloud
+    public void ButtonPointCloud()
+    {
+      SavePointCloud save_pointcloud = GetComponent<SavePointCloud>();
+      PointCloudTask(save_pointcloud);
+
+    }
     async void PointCloudTask(SavePointCloud save_pointcloud)
     {
       await save_pointcloud.GeneratePointCloud();
+      PointCloudSaved.SetActive(true);
+    }
+
+    // Helper functions to toggle flying camera variable
+
+    public void enableFlyingCam()
+    {
+      enable_flying_cam = true;
+      FlyingCamSettings();
+    }
+
+    public void disableFlyingCam()
+    {
+      enable_flying_cam = false;
+      FlyingCamSettings();
+    }
+
+    void FlyingCamSettings()
+    {
+      GameObject flying_cam = GameObject.Find("HDCamera");
+      if (flying_cam)
+      {
+        flying_cam.GetComponent<ExtendedFlycam>().enabled = enable_flying_cam;
+        Animator anim = flying_cam.GetComponent<Animator>();
+        if (anim) { anim.enabled = !enable_flying_cam; }
+      }
     }
 
   }

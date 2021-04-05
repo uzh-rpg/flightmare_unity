@@ -111,6 +111,8 @@ namespace MessageSpec
     public int channels { get; set; }
     public int width { get; set; }
     public int height { get; set; }
+    public List<float> nearClipPlane { get; set; }
+    public List<float> farClipPlane { get; set; }
     public float fov { get; set; }
     public float depthScale { get; set; }
     // transformation matrix
