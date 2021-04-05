@@ -95,8 +95,7 @@ namespace RPGFlightmare
       cam.clearFlags = CameraClearFlags.SolidColor;
     }
 
-    public Camera CreateHiddenCamera(string cam_name, string image_mode,
-    float camFOV, Camera mainCam)
+    public Camera CreateHiddenCamera(string cam_name, string image_mode, float camFOV, float nearClipPlane, float farClipPlane, Camera mainCam)
     {
       var go = new GameObject(cam_name, typeof(Camera));
       go.hideFlags = HideFlags.HideAndDontSave;
@@ -104,6 +103,8 @@ namespace RPGFlightmare
       go.transform.localPosition = new Vector3(0, 0, 0);
       go.transform.localEulerAngles = new Vector3(0, 0, 0);
       var newCamera = go.GetComponent<Camera>();
+      newCamera.nearClipPlane = nearClipPlane;
+      newCamera.farClipPlane = farClipPlane;
 
       //
       updateCameraFilter(newCamera, image_mode);
@@ -118,25 +119,20 @@ namespace RPGFlightmare
       var mainCamera = mainCam.GetComponent<Camera>();
       if (!(mainCamera == newCamera))
       {
-        newCamera.RemoveAllCommandBuffers();
+        // cleanup capturing camera
+        // newCamera.RemoveAllCommandBuffers();
+        // copy all "main" camera parameters into capturing camera
         newCamera.CopyFrom(mainCamera);
         newCamera.targetDisplay = target_display++;
         Debug.Log(newCamera.name + " targetdisplay: " + newCamera.targetDisplay);
 
       }
-      return newCamera;
-    }
-
-    public Camera CreateHiddenCameras(string name)
-    {
-      var go = new GameObject(name, typeof(Camera));
-      go.hideFlags = HideFlags.HideAndDontSave;
-      go.transform.parent = transform;
-
-      go.transform.localPosition = new Vector3(0, 0, 0);
-      go.transform.localEulerAngles = new Vector3(0, 0, 0);
-
-      var newCamera = go.GetComponent<Camera>();
+      //
+      updateCameraFilter(newCamera, image_mode);
+      newCamera.fieldOfView = camFOV;
+      
+      updateCameraFilter(newCamera, image_mode);
+      // newCamera.targetDisplay = 1;
       return newCamera;
     }
 
@@ -155,7 +151,7 @@ namespace RPGFlightmare
       if (!(mainCamera == newCamera))
       {
         // cleanup capturing camera
-        newCamera.RemoveAllCommandBuffers();
+        // newCamera.RemoveAllCommandBuffers();
         // copy all "main" camera parameters into capturing camera
         newCamera.CopyFrom(mainCamera);
         // set targetDisplay here since it gets overriden by CopyFrom()
@@ -184,7 +180,7 @@ namespace RPGFlightmare
       var mainCamera = mainCam.GetComponent<Camera>();
       if (!(mainCamera == newCamera))
       {
-        newCamera.RemoveAllCommandBuffers();
+        // newCamera.RemoveAllCommandBuffers();
         newCamera.CopyFrom(mainCamera);
       }
       return newCamera;
@@ -206,7 +202,7 @@ namespace RPGFlightmare
       var mainCamera = mainCam.GetComponent<Camera>();
       if (!(mainCamera == newCamera))
       {
-        newCamera.RemoveAllCommandBuffers();
+        // newCamera.RemoveAllCommandBuffers();
         newCamera.CopyFrom(mainCamera);
         newCamera.targetDisplay = target_display++;
         Debug.Log(newCamera.name + " targetdisplay: " + newCamera.targetDisplay);
