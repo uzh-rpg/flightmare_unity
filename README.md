@@ -1,6 +1,6 @@
 # RPG Flightmare Unity
 
-RPG Flightmare Unity is a [Unity](https://unity.com/) project for building the photorealistic image renderering engine
+RPG Flightmare Unity is a [Unity](https://unity.com/) project for building the photorealistic image rendering engine
 of the [RPG Flightmare simulator](https://github.com/uzh-rpg/flightmare).   
 
 ![](Images/manu.png)
