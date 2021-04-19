@@ -143,7 +143,6 @@ namespace RPGFlightmare
           ConnectToClient(client_ip);
         }
         Screen.fullScreen = false;
-        Screen.SetResolution(1024, 768, false);
       }
       else
       {
@@ -209,6 +208,8 @@ namespace RPGFlightmare
 
     public void ConnectToClient(string inputIPString)
     {
+      // pose_client_port=10270;
+      // video_client_port=10271;
       Debug.Log("Trying to connect to: " + inputIPString);
       string pose_host_address = "tcp://" + inputIPString + ":" + pose_client_port.ToString();
       string video_host_address = "tcp://" + inputIPString + ":" + video_client_port.ToString();
@@ -483,8 +484,6 @@ namespace RPGFlightmare
           GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
           var currentCam = obj.GetComponent<Camera>();
           currentCam.fieldOfView = camera.fov;
-          currentCam.nearClipPlane = camera.nearClipPlane[0];
-          currentCam.farClipPlane = camera.farClipPlane[0];
           // apply translation and rotation;
           var translation = ListToVector3(vehicle_i.position);
           var quaternion = ListToQuaternion(vehicle_i.rotation);
@@ -806,6 +805,7 @@ namespace RPGFlightmare
             // Get object
             GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
             var currentCam = obj.GetComponent<Camera>();
+            Debug.Log("settins width and height " + settings.camHeight + "/" + settings.camWidth);
             // Make sure camera renders to the correct portion of the screen.
             currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0,
               settings.camWidth * (camera.outputIndex + 1), settings.camHeight);
@@ -927,6 +927,7 @@ namespace RPGFlightmare
           var current_cam = obj.GetComponent<Camera>();
           var raw = readImageFromHiddenCamera(current_cam, cam_config);
           msg.Append(raw);
+
           int layer_id = 0;
           {
             foreach (var layer_on in cam_config.enabledLayers)
@@ -1111,42 +1112,9 @@ namespace RPGFlightmare
     }
     public void quiteSim() { Application.Quit(); }
 
-    // Helper functions for point cloud
-    public void ButtonPointCloud()
-    {
-      SavePointCloud save_pointcloud = GetComponent<SavePointCloud>();
-      PointCloudTask(save_pointcloud);
-
-    }
     async void PointCloudTask(SavePointCloud save_pointcloud)
     {
       await save_pointcloud.GeneratePointCloud();
-      PointCloudSaved.SetActive(true);
-    }
-
-    // Helper functions to toggle flying camera variable
-
-    public void enableFlyingCam()
-    {
-      enable_flying_cam = true;
-      FlyingCamSettings();
-    }
-
-    public void disableFlyingCam()
-    {
-      enable_flying_cam = false;
-      FlyingCamSettings();
-    }
-
-    void FlyingCamSettings()
-    {
-      GameObject flying_cam = GameObject.Find("HDCamera");
-      if (flying_cam)
-      {
-        flying_cam.GetComponent<ExtendedFlycam>().enabled = enable_flying_cam;
-        Animator anim = flying_cam.GetComponent<Animator>();
-        if (anim) { anim.enabled = !enable_flying_cam; }
-      }
     }
 
   }
