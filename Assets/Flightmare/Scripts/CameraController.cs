@@ -651,6 +651,7 @@ namespace RPGFlightmare
           GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
           Vector3 newPos = main_vehicle.transform.position + thirdPV_cam_offset;
           tpv_obj.transform.position = Vector3.Slerp(tpv_obj.transform.position, newPos, 0.5f);
+          var tpv_cam = tpv_obj.GetComponent<Camera>();
           if ((activate_vehicle_cam == 0) || (settings.numCameras == 0 && settings.numEventCameras == 0))
           {
             tpv_cam.targetDisplay = 0;
@@ -915,10 +916,6 @@ namespace RPGFlightmare
           var current_cam = obj.GetComponent<Camera>();
           var raw = readImageFromHiddenCamera(current_cam, cam_config);
           msg.Append(raw);
-<<<<<<< HEAD
-=======
-
->>>>>>> fix merge probs
           int layer_id = 0;
           {
             foreach (var layer_on in cam_config.enabledLayers)
