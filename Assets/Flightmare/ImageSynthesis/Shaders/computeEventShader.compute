@@ -1,0 +1,140 @@
+﻿// Each #kernel tells which function to compile; 
+// you can have many kernels
+
+// This compute shader is responsible for the event creation
+// Input: pixel values
+// Output: the event with respective timestamps
+#pragma kernel EventShader
+
+struct Event{
+    int coord_x;
+    int coord_y;
+    int polarity;
+    int time;
+};
+
+Texture2DArray<float4> imageBuffer;
+Texture2D<float4> newImage;
+RWTexture2DArray<float4> imageCopy;
+RWTexture2D<float4> Destination;
+RWStructuredBuffer<Event> dataBuffer;
+RWStructuredBuffer<uint> amountBuffer;
+RWStructuredBuffer<uint> positionBuffer;
+
+
+int Time_;
+int deltaTime;
+float negThresh;
+float posThresh;
+bool is_first;
+int imageWidth;
+int imageHeight;
+int refractory_period;
+float tolerance =0.0001f;
+float sigma_c=0.0f;
+
+// Hash function from H. Schechter & R. Bridson, goo.gl/RXiKaH
+uint Hash(uint s)
+{
+    s ^= 2747636419u;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    return s;
+}
+
+float Random(uint seed)
+{
+    return float(Hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+[numthreads(8,8,1)]
+void EventShader (uint3 id : SV_DispatchThreadID)
+{
+    // transform colors into greyscale value
+    float intensity= 0.2989*newImage[id.xy].x + 0.5870*newImage[id.xy].y + 0.1140*newImage[id.xy].z;
+    Destination[uint2(id.xy)]=newImage[id.xy];
+    // Transform illuminance into logspace
+    float itdt =(log(intensity+0.0001)-log(0.0001));
+    // Retrieve intensity of last trigered event
+    float it =imageBuffer[uint3(id.xy,0)].x;
+
+    float prev_cross = imageBuffer[uint3(id.xy,0)].y;
+    int last_t = imageBuffer[uint3(id.xy,1)].x;
+    int t_cross =imageBuffer[uint3(id.xy,1)].y;
+
+    //initialize structure values
+    uint buff_idx = (imageWidth*id.y+id.x);
+    uint amount_events= amountBuffer[buff_idx];
+    uint event_idx =positionBuffer[buff_idx];
+    int pol = 0;
+    int count = 0;
+    int t = last_t;
+    
+    //workaround for first image 
+    if(is_first)
+    {
+    last_t = Time_;
+    t_cross =Time_;
+    }
+
+    // check that it is above some threshold
+    float x = abs(it-itdt);
+    if(((it-itdt) <0)&&(x>tolerance))pol=1;
+    else if(((it-itdt) >0)&&(x>tolerance))pol=-1;
+    float C =(pol>0)?posThresh:negThresh;
+    //add noise: at the moment it is commented and no noise is added
+    if(sigma_c>0){
+        // C = C+noise(float1(1.0f));//either use nois or Random function
+        C=C;
+        float min_cont_thresh =0.01f;
+        C=max(C,min_cont_thresh);
+    }
+
+    bool all_crossings= false;
+    // initialize intensitiy value
+    float curr_cross = prev_cross;
+
+    if(x>tolerance)
+    {
+        while(!all_crossings){
+            curr_cross= curr_cross+pol*C;
+          
+            if (((pol > 0)  && curr_cross > it && (curr_cross<=itdt))
+                || ((pol < 0)  && curr_cross < it  &&(curr_cross>=itdt)))
+            {
+                //  handle time
+                int edt =floor((curr_cross-it)*(float(deltaTime))/(itdt-it));
+
+                // linear interpolated time 
+                t = last_t+ edt;
+                // for refractory period control
+                int dt = t-t_cross;
+                t_cross=t;
+                // check refractory period and create event
+                if( dt>= refractory_period )
+                {
+                // create event
+                dataBuffer[event_idx+count].polarity = pol;
+                dataBuffer[event_idx+count].coord_x = id.x;
+                dataBuffer[event_idx+count].coord_y = (imageHeight-1)-id.y;
+                dataBuffer[event_idx+count].time = t;
+
+                prev_cross=curr_cross;
+                }
+            }
+            else{
+                all_crossings=true;
+            }
+
+            if(count==(int(amount_events)-1))all_crossings=true;
+            count++;
+        }
+    }
+    // save values for next rendering
+    if(is_first)imageCopy[uint3(id.xy,0)]=float4(itdt,itdt ,t,0);
+    else imageCopy[uint3(id.xy,0)]= float4(itdt,prev_cross ,t,0);
+    imageCopy[uint3(id.xy,1)]= int4(Time_,t ,0,0);
+}

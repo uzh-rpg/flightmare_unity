@@ -1,0 +1,61 @@
+﻿// this shader is inspired by this wikibook: https://en.wikibooks.org/wiki/Cg_Programming/Unity/Computing_the_Brightest_Pixel
+#pragma kernel MaximumMain
+
+
+Texture2D<float4> InputTexture;
+int InputTextureWidth;
+float Value;
+
+struct maxStruct 
+{
+   float lMax; // luminance of maximum (0, ..., 1023)
+};
+
+RWStructuredBuffer<maxStruct> GroupMaxBuffer;
+
+groupshared maxStruct rowMaxData[32];
+
+[numthreads(32,1,1)]
+void MaximumMain (uint3 groupID : SV_GroupID, 
+      // 3D ID of thread group; range depends on Dispatch call
+   uint3 groupThreadID : SV_GroupThreadID, 
+      // 3D ID of thread in a thread group; range depends on numthreads
+   uint groupIndex : SV_GroupIndex, 
+      // flattened/linearized SV_GroupThreadID. 
+      // groupIndex specifies the index within the group (0 to 63)
+   uint3 id : SV_DispatchThreadID) 
+      // = SV_GroupID * numthreads + SV_GroupThreadID
+      // id.x specifies the row in the input texture image
+{
+   int column;
+
+   // find the maximum of this row 
+   // and store its data in rowMaxData[groupIndex]
+   rowMaxData[groupIndex].lMax = 0;
+   for (column = 0; column < InputTextureWidth; column++) 
+   {
+      float4 color = InputTexture[uint2(column, id.x)];
+      float luminance = float(color.r*346.0);
+      if (luminance > rowMaxData[groupIndex].lMax) 
+      {
+         // rowMaxData[groupIndex].xMax = column;
+         rowMaxData[groupIndex].lMax = luminance;
+      }
+   }
+   // find the maximum of this group 
+   // and store its data in GroupMaxBuffer[groupID.x]
+   GroupMemoryBarrierWithGroupSync(); 
+   if (0 == groupIndex) 
+   {
+      int row; 
+      int rowMax = 0;
+      for (row = 1; row < 32; row++) 
+      { 
+         if (rowMaxData[row].lMax > rowMaxData[rowMax].lMax) 
+         {
+            rowMax = row;
+         }
+      }
+      GroupMaxBuffer[groupID.x] = rowMaxData[rowMax];
+   }
+}

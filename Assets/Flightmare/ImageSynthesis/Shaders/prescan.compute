@@ -1,0 +1,45 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+// #pragma kernel CSMain
+// #pragma kernel Multiply
+#pragma kernel preScan
+
+
+
+
+
+Texture2DArray<float4> imageBuffer;
+Texture2D<float4> newImage;
+// RWTexture2DArray<float4> imageCopy;
+
+// RWStructuredBuffer<uint> dataBuffer;
+RWStructuredBuffer<uint> dataBuffer;
+
+float Thresh;
+bool is_first;
+int imageWidth;
+float tolerance =0.0001f;
+
+
+[numthreads(8,8,1)]
+void preScan (uint3 id : SV_DispatchThreadID)
+{
+    // transform colors into greyscale value
+    float intensity= 0.2989*newImage[id.xy].x + 0.5870*newImage[id.xy].y + 0.1140*newImage[id.xy].z;
+
+
+    float itdt =(log(intensity+0.0001)-log(0.0001));
+    float prev_cross = imageBuffer[uint3(id.xy,0)].y;
+
+    // define distribution, define threshold
+    uint idx = (imageWidth*id.y+id.x);
+
+    // check that it is above some threshold
+    float x = abs(itdt-prev_cross);
+
+    float C=0.1f;
+    uint unumber=uint(trunc(x/C));
+    dataBuffer[idx]= unumber;
+
+
+}
+
