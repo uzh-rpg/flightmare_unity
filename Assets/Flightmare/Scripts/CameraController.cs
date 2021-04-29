@@ -38,7 +38,7 @@ namespace RPGFlightmare
   public class CameraController : MonoBehaviour
   {
     // ==============================================================================
-    // Default Parameters 
+    // Default Parameters
     // ==============================================================================
     [HideInInspector]
     public const int pose_client_default_port = 10253;
@@ -89,15 +89,15 @@ namespace RPGFlightmare
     private Texture2D rendered_frame;
     private object socket_lock;
     // Unity Image Synthesis
-    // post processing including object/category segmentation, 
-    // optical flow, depth image. 
+    // post processing including object/category segmentation,
+    // optical flow, depth image.
     private RPGImageSynthesis img_post_processing;
     private sceneSchedule scene_schedule;
     private Vector3 thirdPV_cam_offset;
     private int activate_vehicle_cam = 0;
 
     /* =====================
-    * UNITY PLAYER EVENT HOOKS 
+    * UNITY PLAYER EVENT HOOKS
     * =====================
     */
     // Function called when Unity Player is loaded.
@@ -163,7 +163,7 @@ namespace RPGFlightmare
       StartCoroutine(WaitForRender());
     }
 
-    // Co-routine in Unity, executed every frame. 
+    // Co-routine in Unity, executed every frame.
     public IEnumerator WaitForRender()
     {
       // Wait until end of frame to transmit images
@@ -242,10 +242,10 @@ namespace RPGFlightmare
 
     }
 
-    /* 
+    /*
     * Update is called once per frame
     * Take the most recent ZMQ message and use it to position the cameras.
-    * If there has not been a recent message, the renderer should probably pause rendering until a new request is received. 
+    * If there has not been a recent message, the renderer should probably pause rendering until a new request is received.
     */
     void Update()
     {
@@ -300,12 +300,12 @@ namespace RPGFlightmare
             {
               sendReady();
             }
-            return; // no need to worry about the rest if not ready. 
+            return; // no need to worry about the rest if not ready.
           }
           else
           {
             pub_message = new PubMessage_t(settings);
-            // after initialization, we only receive sub_message message of the vehicle. 
+            // after initialization, we only receive sub_message message of the vehicle.
             sub_message = JsonConvert.DeserializeObject<SubMessage_t>(msg[1].ConvertToString());
             // Ensure that dynamic object settings such as depth-scaling and color are set correctly.
             updateDynamicObjectSettings();
@@ -342,7 +342,7 @@ namespace RPGFlightmare
     }
 
     /* ==================================
-    * FlightGoggles High Level Functions 
+    * FlightGoggles High Level Functions
     * ==================================
     */
     // Tries to initialize uninitialized objects multiple times until the object is initialized.
@@ -459,7 +459,7 @@ namespace RPGFlightmare
           Debug.Log(camera.ID);
           // Get camera object
           GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
-          // 
+          //
           var currentCam = obj.GetComponent<Camera>();
           currentCam.fieldOfView = camera.fov;
           currentCam.nearClipPlane = camera.nearClipPlane[0];
@@ -516,7 +516,7 @@ namespace RPGFlightmare
             // string camera_ID = vehicle_i.ID + "_" + camera.ID;
             // Get camera object
             GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
-            // 
+            //
             var currentCam = obj.GetComponent<Camera>();
             currentCam.fieldOfView = camera.fov;
             // apply translation and rotation;
@@ -562,11 +562,30 @@ namespace RPGFlightmare
 
         foreach (Object_t obj_state in sub_message.objects)
         {
+          Debug.Log("Updating object with id " + obj_state.ID);
+          // Fallback to this template if loading the requested object is impossible
+          // NOTE: it would be better to have a "404-template"
+          GameObject template = gate_template;
+          // Check if the object exists. If not, the prefab 'obj_state.prefabID'
+          // should be loaded and used as template.
+          if(!internal_state.contains(obj_state.ID)) {
+            // Try loading the requested resource
+            GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+            if(prefab == null)
+            {
+              Debug.Log("Failed loading object, using default");
+            }
+            else
+            {
+              // ok, use it :)
+              template = prefab;
+            }
+          }
+          // Get the object (it is created in case it is missing)
+          GameObject obj = internal_state.getGameobject(obj_state.ID, template);
           // Apply translation, rotation, and scaling
-          // GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-          GameObject other_obj = internal_state.getGameobject(obj_state.ID, gate_template);
-          other_obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
-          other_obj.transform.localScale = ListToVector3(obj_state.size);
+          obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
+          obj.transform.localScale = ListToVector3(obj_state.size);
         }
         {
           // third person view camera
@@ -653,14 +672,14 @@ namespace RPGFlightmare
           {
 
             float angle_i = lidar.start_angle + angle_resolution * beam_i;
-            // Find direction and origin of raytrace for LIDAR. 
+            // Find direction and origin of raytrace for LIDAR.
             var raycastDirection = lidar_rotation * new Vector3((float)Math.Cos(angle_i), 0, (float)Math.Sin(angle_i));
             // Run the raytrace
             bool hasHit = Physics.Raycast(lidar_position, raycastDirection, out lidarHit, lidar.max_distance);
             // Get distance. Return max+1 if out of range
             float raycastDistance = hasHit ? lidarHit.distance : lidar.max_distance + 1;
             // Save the result of the raycast.
-            // vehicle_collisions.Add(raycastDistance); // don't use add.. 
+            // vehicle_collisions.Add(raycastDistance); // don't use add..
             pub_message.pub_vehicles[vehicle_count - 1].lidar_ranges.Add(raycastDistance);
             Debug.DrawLine(lidar_position, lidar_position + raycastDirection * raycastDistance, Color.red);
           }
@@ -669,7 +688,7 @@ namespace RPGFlightmare
     }
 
     /* =============================================
-    * FlightGoggles Initialization Functions 
+    * FlightGoggles Initialization Functions
     * =============================================
     */
     void resizeScreen()
@@ -705,11 +724,20 @@ namespace RPGFlightmare
       // Initialize additional objects
       foreach (var obj_state in settings.objects)
       {
-        // GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-        Debug.Log("obj_state id : " + obj_state.ID);
-        GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template);
+        Debug.Log("Instantiating obj_state id : " + obj_state.ID);
+        // Try loading the given prefab.
+        GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+        // If the operation fails, fallback to the "template"
+        if(prefab == null)
+        {
+          Debug.Log("Failed loading object, using default");
+          // NOTE: it would be better to have a "404-template"
+          prefab = gate_template;
+        }
+        // Add the object and set its pose / size
+        GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
+        obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
         obj.transform.localScale = ListToVector3(obj_state.size);
-        // obj.layer = 9;
       }
       foreach (var vehicle in settings.vehicles)
       {
@@ -733,7 +761,7 @@ namespace RPGFlightmare
             GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
             var currentCam = obj.GetComponent<Camera>();
             // Make sure camera renders to the correct portion of the screen.
-            // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0, 
+            // currentCam.pixelRect = new Rect(settings.camWidth * camera.outputIndex, 0,
             // settings.camWidth * (camera.outputIndex+1), settings.camHeight);
             currentCam.pixelRect = new Rect(0, 0,
                 settings.camWidth, settings.camHeight);
@@ -839,7 +867,7 @@ namespace RPGFlightmare
     }
     byte[] readImageFromScreen(Camera_t cam_config)
     {
-      // rendered_frame.ReadPixels(new Rect(cam_config.outputIndex*(cam_config.width), 0, 
+      // rendered_frame.ReadPixels(new Rect(cam_config.outputIndex*(cam_config.width), 0,
       // (cam_config.outputIndex+1)*cam_config.width,  cam_config.height), 0, 0);
       rendered_frame.ReadPixels(new Rect(0, 0,
           cam_config.width, cam_config.height), 0, 0);
@@ -857,7 +885,7 @@ namespace RPGFlightmare
       RenderTexture.active = templRT;
       subcam.targetTexture = templRT;
       //
-      // subcam.pixelRect = new Rect(cam_config.width * cam_config.outputIndex, 0, 
+      // subcam.pixelRect = new Rect(cam_config.width * cam_config.outputIndex, 0,
       // cam_config.width * ( cam_config.outputIndex+1), cam_config.height);
       subcam.pixelRect = new Rect(0, 0,
           cam_config.width, cam_config.height);
@@ -880,7 +908,7 @@ namespace RPGFlightmare
     }
 
     /* ==================================
-    * FlightGoggles Helper Functions 
+    * FlightGoggles Helper Functions
     * ==================================
     */
 
