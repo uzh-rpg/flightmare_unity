@@ -36,6 +36,12 @@ namespace MessageSpec
 
     private Dictionary<string, ObjectState_t> objects;
 
+    // Tells if the given object exists inside the environment.
+    public bool contains(string ID)
+    {
+      return objects.ContainsKey(ID);
+    }
+
     // Advanced getters/setters
     // Get Wrapper object, defaulting to a passed in template if it does not exist.
     public ObjectState_t getWrapperObject(string ID, GameObject template)
@@ -164,7 +170,7 @@ namespace MessageSpec
   // =============================
   public class SettingsMessage_t
   {
-    // Startup parameters. 
+    // Startup parameters.
     // public bool sceneIsInternal { get; set; }
     public int scene_id { get; set; }
 
@@ -178,7 +184,7 @@ namespace MessageSpec
     // ==============================================================================
     public int numVehicles { get { return vehicles.Count(); } }
     public Vehicle_t mainVehicle { get; set; }
-    // we noly count the number of camera on the main vehicle. 
+    // we noly count the number of camera on the main vehicle.
     public int numCameras { get; set; }
     public Camera_t mainCamera { get; set; }
     // public List<Camera_t> cameras{ get; set; }
@@ -190,7 +196,7 @@ namespace MessageSpec
     public void InitParamsters()
     {
       // kind of ugly, the purpose is to handle
-      // the vehile that has no cameras. 
+      // the vehile that has no cameras.
       if (numVehicles > 0)
       {
         mainVehicle = vehicles[(int)(numVehicles / 2)];
