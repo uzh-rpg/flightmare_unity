@@ -67,7 +67,7 @@ namespace RPGFlightmare
     // public bool outputLandmarkLocations = false;
     public GameObject HD_camera;
     public GameObject quad_template;  // Main vehicle template
-    public GameObject gate_template;  // Main vehicle template
+    // public GameObject gate_template;  // Main vehicle template
     public GameObject splash_screen;
     public GameObject PointCloudSaved;
     public InputField input_ip;
@@ -563,8 +563,9 @@ namespace RPGFlightmare
         foreach (Object_t obj_state in sub_message.objects)
         {
           // Apply translation, rotation, and scaling
-          // GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-          GameObject other_obj = internal_state.getGameobject(obj_state.ID, gate_template);
+          GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+          GameObject other_obj = internal_state.getGameobject(obj_state.ID, prefab);
+         // GameObject other_obj = internal_state.getGameobject(obj_state.ID, gate_template);
           other_obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
           other_obj.transform.localScale = ListToVector3(obj_state.size);
         }
@@ -705,9 +706,10 @@ namespace RPGFlightmare
       // Initialize additional objects
       foreach (var obj_state in settings.objects)
       {
-        // GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+        GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
         Debug.Log("obj_state id : " + obj_state.ID);
-        GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template);
+        // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
+        GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
         obj.transform.localScale = ListToVector3(obj_state.size);
         // obj.layer = 9;
       }

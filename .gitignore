@@ -67,6 +67,10 @@ sysinfo.txt
 /Binary
 /Assets/Apartment
 /Assets/NonPubAssets*
+/Assets/ApocalypticWasteland
+/Assets/NatureManufacture Assets
+/Assets/ApocalypticWasteland.meta
+/Assets/NatureManufacture Assets.meta
 NoPubObj/
 .ply
 pointcloud_data/
