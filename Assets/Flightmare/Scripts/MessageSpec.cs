@@ -60,6 +60,11 @@ namespace MessageSpec
       return objects[ID];
     }
 
+    public GameObject getGameobject(string ID)
+    {
+      return objects[ID].gameObj;
+    }
+
     // Get gameobject from wrapper object
     public GameObject getGameobject(string ID, GameObject template)
     {
@@ -152,8 +157,8 @@ namespace MessageSpec
   public class Object_t
   {
     public string ID { get; set; }
-    public string prefabID { get; set; }
     public List<float> position { get; set; }
+    public string prefabID { get; set; }
     public List<float> rotation { get; set; }
     // Metadata
     public List<float> size { get; set; }
@@ -167,10 +172,12 @@ namespace MessageSpec
     // Startup parameters. 
     // public bool sceneIsInternal { get; set; }
     public int scene_id { get; set; }
+    public string object_csv { get; set; }
 
     // Object state update
     public List<Vehicle_t> vehicles { get; set; }
-    public List<Object_t> objects { get; set; }
+    public List<Object_t> static_objects { get; set; }
+    public List<Object_t> dynamic_objects { get; set; }
     // public List<Landmark_t> landmarksInView { get; set; } = new List<Landmark_t>(); // Must be initialized or will segfault.
 
     // ==============================================================================
@@ -220,7 +227,8 @@ namespace MessageSpec
     public Int64 frame_id { get; set; }
     // Object state update
     public List<Vehicle_t> vehicles { get; set; }
-    public List<Object_t> objects { get; set; }
+    public List<Object_t> static_objects { get; set; }
+    public List<Object_t> dynamic_objects { get; set; }
     // ==============================================================================
     // Additional getters (for convenience)
     // ==============================================================================

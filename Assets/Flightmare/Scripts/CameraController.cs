@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Globalization;
 // Array ops
 using System.Linq;
 
@@ -49,7 +49,7 @@ namespace RPGFlightmare
     [HideInInspector]
     public const string client_ip_pref_key = "client_ip";
     [HideInInspector]
-    public const int connection_timeout_seconds_default = 5;
+    public const int connection_timeout_seconds_default = 10;
     [HideInInspector]
     public string rpg_dsim_version = "";
 
@@ -93,6 +93,7 @@ namespace RPGFlightmare
     // optical flow, depth image. 
     private RPGImageSynthesis img_post_processing;
     private sceneSchedule scene_schedule;
+    private ConfigObjects config_object;
     private Vector3 thirdPV_cam_offset;
     private int activate_vehicle_cam = 0;
 
@@ -159,6 +160,8 @@ namespace RPGFlightmare
       img_post_processing = GetComponent<RPGImageSynthesis>();
 
       scene_schedule = GetComponent<sceneSchedule>();
+      config_object = GetComponent<ConfigObjects>();
+
       //
       StartCoroutine(WaitForRender());
     }
@@ -486,10 +489,10 @@ namespace RPGFlightmare
         var thirdPV_cam = tpv_obj.GetComponent<Camera>();
         // hard coded parameters for third person camera view
         thirdPV_cam.fieldOfView = 90.0f;
-        thirdPV_cam_offset = new Vector3(0.0f, 2.0f, -4.0f);
+        thirdPV_cam_offset = new Vector3(-3.0f, 2.0f, 0.0f);
         GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
         thirdPV_cam.transform.position = main_vehicle.transform.position + thirdPV_cam_offset;
-        thirdPV_cam.transform.eulerAngles = new Vector3(20, 0, 0);
+        thirdPV_cam.transform.eulerAngles = new Vector3(20, 90, 0);
       }
     }
 
@@ -522,12 +525,6 @@ namespace RPGFlightmare
             // apply translation and rotation;
             var translation = ListToVector3(vehicle_i.position);
             var quaternion = ListToQuaternion(vehicle_i.rotation);
-            Debug.Log(vehicle_i.ID);
-            Debug.Log(vehicle_i.rotation[0]);
-            Debug.Log(vehicle_i.rotation[1]);
-            Debug.Log(vehicle_i.rotation[2]);
-            Debug.Log(vehicle_i.rotation[3]);
-            Debug.Log(quaternion.eulerAngles);
 
             // Quaternion To Matrix conversion failed because input Quaternion(=quaternion) is invalid
             // create valid Quaternion from Euler angles
@@ -560,15 +557,17 @@ namespace RPGFlightmare
           vehicle_obj.transform.localScale = ListToVector3(vehicle_i.size);
         }
 
-        foreach (Object_t obj_state in sub_message.objects)
+        foreach (Object_t obj_state in sub_message.dynamic_objects)
         {
           // Apply translation, rotation, and scaling
-          GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-          GameObject other_obj = internal_state.getGameobject(obj_state.ID, prefab);
+          // GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+          // GameObject other_obj = internal_state.getGameobject(obj_state.ID, prefab);
+          GameObject other_obj = internal_state.getGameobject(obj_state.ID);
          // GameObject other_obj = internal_state.getGameobject(obj_state.ID, gate_template);
           other_obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
           other_obj.transform.localScale = ListToVector3(obj_state.size);
         }
+
         {
           // third person view camera
           GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
@@ -703,16 +702,34 @@ namespace RPGFlightmare
 
     void instantiateObjects()
     {
+      config_object.ReadCSVFile(internal_state, settings.object_csv);
+      // 
       // Initialize additional objects
-      foreach (var obj_state in settings.objects)
+      foreach (var obj_state in settings.static_objects)
       {
         GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-        Debug.Log("obj_state id : " + obj_state.ID);
+        // Debug.Log("obj_state id : " + obj_state.ID);
         // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
         GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
         obj.transform.localScale = ListToVector3(obj_state.size);
+        obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
+        obj.transform.localScale = ListToVector3(obj_state.size);
         // obj.layer = 9;
       }
+
+      // 
+      foreach (var obj_state in settings.dynamic_objects)
+      {
+        GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+        // Debug.Log("obj_state id : " + obj_state.ID);
+        // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
+        GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
+        obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
+        obj.transform.localScale = ListToVector3(obj_state.size);
+        // obj.layer = 9;
+      }
+
+      //  
       foreach (var vehicle in settings.vehicles)
       {
         Debug.Log("vehicle id : " + vehicle.ID);

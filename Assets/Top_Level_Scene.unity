@@ -291,6 +291,18 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1181571163, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1181571165, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1181571167, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8638909755990179799, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
       propertyPath: m_Name
       value: Camera_Controller
@@ -299,6 +311,10 @@ PrefabInstance:
       propertyPath: input_ip
       value: 
       objectReference: {fileID: 708839863}
+    - target: {fileID: 8638909755990179802, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8638909755990179802, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
       propertyPath: splash_screen
       value: 
@@ -434,6 +450,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 77d5c60994030d04e813b55bcda675e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1181571169
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1181571162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39ab36e0470dd82118123957b035a309, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &1332777631

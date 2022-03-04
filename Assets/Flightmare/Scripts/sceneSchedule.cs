@@ -13,12 +13,14 @@ namespace RPGFlightmare
     public const string SCENE_WAREHOUSE = "Environments/Warehouse/Scenes/DemoScene";
     public const string SCENE_NATUREFOREST = "NatureManufacture Assets/Forest Environment Dynamic Nature/Demo Scenes/Forest Demo Scene";
     public const string SCENE_WASTELAND = "ApocalypticWasteland/Scenes/Wasteland";
+    public const string SCENE_SIMPLE = "Resources/Simple";
     //
     public List<string> scenes_list = new List<string>();
     public int default_scene_id;
     public int num_scene; // number of scenes in total
     public Scenes()
     {
+      scenes_list.Add(SCENE_SIMPLE);
       scenes_list.Add(SCENE_INDUSTRIAL);
       scenes_list.Add(SCENE_WAREHOUSE);
       scenes_list.Add(SCENE_NATUREFOREST);
