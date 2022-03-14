@@ -20,9 +20,8 @@ namespace RPGFlightmare
     public int num_scene; // number of scenes in total
     public Scenes()
     {
-      scenes_list.Add(SCENE_SIMPLE);
-      scenes_list.Add(SCENE_INDUSTRIAL);
       scenes_list.Add(SCENE_WAREHOUSE);
+      scenes_list.Add(SCENE_INDUSTRIAL);
       scenes_list.Add(SCENE_NATUREFOREST);
       scenes_list.Add(SCENE_WASTELAND);
 

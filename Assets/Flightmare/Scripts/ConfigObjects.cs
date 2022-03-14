@@ -114,9 +114,9 @@ namespace RPGFlightmare
         rotation.z = float.Parse(data_values[7], CultureInfo.InvariantCulture.NumberFormat);
         rotation.w = float.Parse(data_values[4], CultureInfo.InvariantCulture.NumberFormat);
         // 
-        size.x = (float)1;
-        size.y = (float)1;
-        size.z = (float)1;
+        size.x = float.Parse(data_values[8], CultureInfo.InvariantCulture.NumberFormat);
+        size.y = float.Parse(data_values[9], CultureInfo.InvariantCulture.NumberFormat);
+        size.z = float.Parse(data_values[10], CultureInfo.InvariantCulture.NumberFormat);
 
         obj.transform.SetPositionAndRotation(position, rotation);
         obj.transform.localScale = size;

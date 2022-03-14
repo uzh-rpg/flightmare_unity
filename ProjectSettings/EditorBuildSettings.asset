@@ -15,6 +15,10 @@ EditorBuildSettings:
     path: Assets/Environments/Warehouse/Scenes/DemoScene.unity
     guid: f60a90c928fe7ee4cb322afc5675b963
   - enabled: 1
-    path: Assets/Resources/Simple.unity
-    guid: c74e94a3d318144fb86c401ce141b0a2
+    path: Assets/ApocalypticWasteland/Scenes/Wasteland.unity
+    guid: 246461ea805f3c14cb620102040f1e34
+  - enabled: 1
+    path: Assets/NatureManufacture Assets/Forest Environment Dynamic Nature/Demo
+      Scenes/Forest Demo Scene.unity
+    guid: 3c698a3ac77025942a8cd0682cb02889
   m_configObjects: {}
