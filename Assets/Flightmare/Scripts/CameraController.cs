@@ -447,55 +447,6 @@ namespace RPGFlightmare
       }
     }
 
-    void instantiateCameras()
-    {
-      // Disable cameras in scene
-      foreach (Camera c in FindObjectsOfType<Camera>())
-      {
-        Debug.Log("Disable extra camera!");
-        c.enabled = false;
-      }
-      foreach (var vehicle_i in settings.vehicles)
-      {
-        foreach (Camera_t camera in vehicle_i.cameras)
-        {
-          Debug.Log(camera.ID);
-          // Get camera object
-          GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
-          // 
-          var currentCam = obj.GetComponent<Camera>();
-          currentCam.fieldOfView = camera.fov;
-          currentCam.nearClipPlane = camera.nearClipPlane[0];
-          currentCam.farClipPlane = camera.farClipPlane[0];
-          // apply translation and rotation;
-          var translation = ListToVector3(vehicle_i.position);
-          var quaternion = ListToQuaternion(vehicle_i.rotation);
-          var scale = new Vector3(1, 1, 1);
-
-          Matrix4x4 T_WB = Matrix4x4.TRS(translation, quaternion, scale);
-          var T_BC = ListToMatrix4x4(camera.T_BC);
-          // translate camera from body frame to world frame
-          var T_WC = T_WB * T_BC;
-          Debug.Log(T_WC);
-          // compute camera position and rotation with respect to world frame
-          var position = new Vector3(T_WC[0, 3], T_WC[1, 3], T_WC[2, 3]);
-          var rotation = T_WC.rotation;
-          obj.transform.SetPositionAndRotation(position, rotation);
-        }
-      }
-      {
-        // instantiate third person view camera
-        GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
-        var thirdPV_cam = tpv_obj.GetComponent<Camera>();
-        // hard coded parameters for third person camera view
-        thirdPV_cam.fieldOfView = 90.0f;
-        thirdPV_cam_offset = new Vector3(-1.0f, 1.0f, 0.0f);
-        GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
-        thirdPV_cam.transform.position = main_vehicle.transform.position + thirdPV_cam_offset;
-        thirdPV_cam.transform.eulerAngles = new Vector3(20, 90, 0);
-      }
-    }
-
     // Update object and camera positions based on the positions sent by ZMQ.
     void updateObjectPositions()
     {
@@ -513,6 +464,11 @@ namespace RPGFlightmare
         int vehicle_count = 0;
         foreach (Vehicle_t vehicle_i in sub_message.vehicles)
         {
+          // Apply translation, rotation, and scaling to vehicle
+          GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
+          Vector3 vehicle_position = ListToVector3(vehicle_i.position) + ListToVector3(settings.render_offset);
+          vehicle_obj.transform.SetPositionAndRotation(vehicle_position, ListToQuaternion(vehicle_i.rotation));
+          vehicle_obj.transform.localScale = ListToVector3(vehicle_i.size);
           foreach (Camera_t camera in vehicle_i.cameras)
           {
             vehicle_count += 1;
@@ -523,7 +479,7 @@ namespace RPGFlightmare
             var currentCam = obj.GetComponent<Camera>();
             currentCam.fieldOfView = camera.fov;
             // apply translation and rotation;
-            var translation = ListToVector3(vehicle_i.position);
+            var translation = ListToVector3(vehicle_i.position) + ListToVector3(settings.render_offset);
             var quaternion = ListToQuaternion(vehicle_i.rotation);
 
             // Quaternion To Matrix conversion failed because input Quaternion(=quaternion) is invalid
@@ -550,11 +506,6 @@ namespace RPGFlightmare
               currentCam.targetDisplay = 1;
             }
           }
-          // Debug.Log("xxxxxxxxx" + vehicle_i.ID);
-          // Apply translation, rotation, and scaling to vehicle
-          GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
-          vehicle_obj.transform.SetPositionAndRotation(ListToVector3(vehicle_i.position), ListToQuaternion(vehicle_i.rotation));
-          vehicle_obj.transform.localScale = ListToVector3(vehicle_i.size);
         }
 
         foreach (Object_t obj_state in sub_message.dynamic_objects)
@@ -563,8 +514,10 @@ namespace RPGFlightmare
           // GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
           // GameObject other_obj = internal_state.getGameobject(obj_state.ID, prefab);
           GameObject other_obj = internal_state.getGameobject(obj_state.ID);
-         // GameObject other_obj = internal_state.getGameobject(obj_state.ID, gate_template);
-          other_obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
+          // GameObject other_obj = internal_state.getGameobject(obj_state.ID, gate_template);
+          Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);
+          // Debug.Log(ListToVector3(settings.render_offset));
+          other_obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(obj_state.rotation));
           other_obj.transform.localScale = ListToVector3(obj_state.size);
         }
 
@@ -637,7 +590,7 @@ namespace RPGFlightmare
 
           var lidar = vehicle_i.lidars[0];
           // apply translation and rotation;
-          var translation = ListToVector3(vehicle_i.position);
+          var translation = ListToVector3(vehicle_i.position)+ ListToVector3(settings.render_offset);
           var quaternion = ListToQuaternion(vehicle_i.rotation);
           Matrix4x4 T_WB = Matrix4x4.TRS(translation, quaternion, new Vector3(1, 1, 1));
           var T_BS = ListToMatrix4x4(lidar.T_BS);
@@ -700,9 +653,59 @@ namespace RPGFlightmare
       Resources.UnloadUnusedAssets();
     }
 
+
+    void instantiateCameras()
+    {
+      // Disable cameras in scene
+      foreach (Camera c in FindObjectsOfType<Camera>())
+      {
+        Debug.Log("Disable extra camera!");
+        c.enabled = false;
+      }
+      foreach (var vehicle_i in settings.vehicles)
+      {
+        foreach (Camera_t camera in vehicle_i.cameras)
+        {
+          Debug.Log(camera.ID);
+          // Get camera object
+          GameObject obj = internal_state.getGameobject(camera.ID, HD_camera);
+          // 
+          var currentCam = obj.GetComponent<Camera>();
+          currentCam.fieldOfView = camera.fov;
+          currentCam.nearClipPlane = camera.nearClipPlane[0];
+          currentCam.farClipPlane = camera.farClipPlane[0];
+          // apply translation and rotation;
+          var translation = ListToVector3(vehicle_i.position) + ListToVector3(settings.render_offset);
+          var quaternion = ListToQuaternion(vehicle_i.rotation);
+          var scale = new Vector3(1, 1, 1);
+
+          Matrix4x4 T_WB = Matrix4x4.TRS(translation, quaternion, scale);
+          var T_BC = ListToMatrix4x4(camera.T_BC);
+          // translate camera from body frame to world frame
+          var T_WC = T_WB * T_BC;
+          Debug.Log(T_WC);
+          // compute camera position and rotation with respect to world frame
+          var position = new Vector3(T_WC[0, 3], T_WC[1, 3], T_WC[2, 3]);
+          var rotation = T_WC.rotation;
+          obj.transform.SetPositionAndRotation(position, rotation);
+        }
+      }
+      {
+        // instantiate third person view camera
+        GameObject tpv_obj = internal_state.getGameobject(settings.mainVehicle.ID + "_ThirdPV", HD_camera);
+        var thirdPV_cam = tpv_obj.GetComponent<Camera>();
+        // hard coded parameters for third person camera view
+        thirdPV_cam.fieldOfView = 90.0f;
+        thirdPV_cam_offset = new Vector3(-1.0f, 1.0f, 0.0f);
+        GameObject main_vehicle = internal_state.getGameobject(settings.mainVehicle.ID, quad_template);
+        thirdPV_cam.transform.position = main_vehicle.transform.position + thirdPV_cam_offset;
+        thirdPV_cam.transform.eulerAngles = new Vector3(20, 90, 0);
+      }
+    }
+
     void instantiateObjects()
     {
-      config_object.ReadCSVFile(internal_state, settings.object_csv);
+      config_object.ReadCSVFile(internal_state, settings.object_csv, ListToVector3(settings.render_offset));
       // 
       // Initialize additional objects
       foreach (var obj_state in settings.static_objects)
@@ -712,7 +715,8 @@ namespace RPGFlightmare
         // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
         GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
         obj.transform.localScale = ListToVector3(obj_state.size);
-        obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
+        Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);
+        obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(obj_state.rotation));
         obj.transform.localScale = ListToVector3(obj_state.size);
         // obj.layer = 9;
       }
@@ -724,7 +728,8 @@ namespace RPGFlightmare
         // Debug.Log("obj_state id : " + obj_state.ID);
         // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
         GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
-        obj.transform.SetPositionAndRotation(ListToVector3(obj_state.position), ListToQuaternion(obj_state.rotation));
+        Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);
+        obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(obj_state.rotation));
         obj.transform.localScale = ListToVector3(obj_state.size);
         // obj.layer = 9;
       }
@@ -734,7 +739,9 @@ namespace RPGFlightmare
       {
         Debug.Log("vehicle id : " + vehicle.ID);
         GameObject obj = internal_state.getGameobject(vehicle.ID, quad_template);
-        obj.transform.SetPositionAndRotation(ListToVector3(vehicle.position), ListToQuaternion(vehicle.rotation));
+        Vector3 obj_position = ListToVector3(vehicle.position) + ListToVector3(settings.render_offset);
+        // Debug.Log(ListToVector3(vehicle.position));
+        obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(vehicle.rotation));
         obj.transform.localScale = ListToVector3(vehicle.size);
       }
     }

@@ -71,7 +71,7 @@ namespace RPGFlightmare
 
     }
 
-    public void ReadCSVFile(UnityState_t internal_state, string object_csv)
+    public void ReadCSVFile(UnityState_t internal_state, string object_csv, Vector3 render_offset)
     {
       Debug.Log("Load CSV Files");
       // const string csv_fle ="./Assets/static_obstacles.csv";
@@ -92,7 +92,6 @@ namespace RPGFlightmare
         }
 
         var data_values = data_string.Split(",");
-        Debug.Log("data " + data_values[1].ToString() + obj_id.ToString());
 
         string obj_name= "static_object_" + obj_id.ToString();
         string prefab_id = data_values[0].ToString();
@@ -107,6 +106,8 @@ namespace RPGFlightmare
         position.x = float.Parse(data_values[1], CultureInfo.InvariantCulture.NumberFormat);
         position.y = float.Parse(data_values[3], CultureInfo.InvariantCulture.NumberFormat);
         position.z = float.Parse(data_values[2], CultureInfo.InvariantCulture.NumberFormat);
+
+        position = position + render_offset;
 
         // 
         rotation.x = float.Parse(data_values[5], CultureInfo.InvariantCulture.NumberFormat);

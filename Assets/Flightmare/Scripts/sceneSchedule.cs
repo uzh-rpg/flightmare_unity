@@ -14,6 +14,7 @@ namespace RPGFlightmare
     public const string SCENE_NATUREFOREST = "NatureManufacture Assets/Forest Environment Dynamic Nature/Demo Scenes/Forest Demo Scene";
     public const string SCENE_WASTELAND = "ApocalypticWasteland/Scenes/Wasteland";
     public const string SCENE_SIMPLE = "Resources/Simple";
+    public const string SCENE_MOUNTAIN= "Mountain Environment/Demo Scenes/Standard Mountain Scene";
     //
     public List<string> scenes_list = new List<string>();
     public int default_scene_id;
@@ -22,8 +23,9 @@ namespace RPGFlightmare
     {
       scenes_list.Add(SCENE_WAREHOUSE);
       scenes_list.Add(SCENE_INDUSTRIAL);
-      scenes_list.Add(SCENE_NATUREFOREST);
+      scenes_list.Add(SCENE_MOUNTAIN);
       scenes_list.Add(SCENE_WASTELAND);
+      // scenes_list.Add(SCENE_NATUREFOREST);
 
       default_scene_id = 0;
       num_scene = scenes_list.Count;
@@ -61,6 +63,7 @@ namespace RPGFlightmare
     {
       loadScene(1, true);
     }
+
     public void loadGarage()
     {
       loadScene(2, true);
@@ -75,8 +78,5 @@ namespace RPGFlightmare
     {
       loadScene(4, true);
     }
-
-
-
   }
 }

@@ -174,6 +174,8 @@ namespace MessageSpec
     public int scene_id { get; set; }
     public string object_csv { get; set; }
 
+    public List<float> render_offset { get; set; }
+
     // Object state update
     public List<Vehicle_t> vehicles { get; set; }
     public List<Object_t> static_objects { get; set; }

@@ -6,6 +6,7 @@
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
+Logs/
 
 ### Private scenes
 Forest
@@ -18,6 +19,9 @@ Tunnel
 Tunnel.meta
 PBR Racing Drone
 PBR Racing Drone.meta
+Mountain Environment
+Mountain Environment.meta
+
 
 ### Private Timelines
 Forest_timeline.prefab
