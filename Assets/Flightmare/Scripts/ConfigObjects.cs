@@ -87,9 +87,9 @@ namespace RPGFlightmare
         }
 
         obj_id += 1;
-        if (obj_id <= 1) {
-          continue;
-        }
+        // if (obj_id <= 1) {
+        //   continue;
+        // }
 
         var data_values = data_string.Split(",");
 
