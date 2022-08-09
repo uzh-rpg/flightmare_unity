@@ -41,9 +41,9 @@ namespace RPGFlightmare
     // Default Parameters 
     // ==============================================================================
     [HideInInspector]
-    public const int pose_client_default_port = 10253;
+    public const int pose_client_default_port = 12345;
     [HideInInspector]
-    public const int video_client_default_port = 10254;
+    public const int video_client_default_port = 12346;
     [HideInInspector]
     public const string client_ip_default = "127.0.0.1";
     [HideInInspector]
@@ -122,8 +122,8 @@ namespace RPGFlightmare
       {
         // Check if FlightGoggles should change its connection ports (for parallel operation)
         // Check if the program should use CLI arguments for IP.
-        pose_client_port = Int32.Parse(GetArg("-input-port", "10253"));
-        video_client_port = Int32.Parse(GetArg("-output-port", "10254"));
+        pose_client_port = Int32.Parse(GetArg("-input-port", "12345"));
+        video_client_port = Int32.Parse(GetArg("-output-port", "12346"));
         // Check if the program should use CLI arguments for IP.
         string client_ip_from_cli = GetArg("-client-ip", "");
         if (client_ip_from_cli.Length > 0)
@@ -895,6 +895,9 @@ namespace RPGFlightmare
       image.Apply();
       // var bytes = tex.EncodeToPNG();
       byte[] raw = image.GetRawTextureData();
+      
+      // byte[] raw_image = image.EncodeToPNG();
+      // File.WriteAllBytes("/home/chaoni/Desktop/example.png", raw_image);
       //
       subcam.targetTexture = prevCameraRT;
       RenderTexture.active = prevActiveRT;

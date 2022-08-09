@@ -1,6 +1,5 @@
 // Based on builtin Internal-DepthNormalsTexture.shader
 // EncodeDepthNormal() is replaced with custom Output() function
-
 Shader "Hidden/UberReplacement" {
 Properties {
 	_MainTex ("", 2D) = "white" {}
@@ -18,12 +17,14 @@ fixed4 _ObjectColor;
 fixed4 _CategoryColor;
 int _OutputMode;
 
+#include "UnityCG.cginc"
+
 // remap depth: [0 @ eye .. 1 @ far] => [0 @ near .. 1 @ far]
 inline float Linear01FromEyeToLinear01FromNear(float depth01)
 {
 	float near = _ProjectionParams.y;
 	float far = _ProjectionParams.z;
-	return (depth01 - near/far) * (1 + near/far);
+	return (clamp(depth01,0,1) - near/far) * (1 + near/far);
 }
 
 float4 Output(float depth01, float3 normal)
@@ -65,7 +66,7 @@ float4 Output(float depth01, float3 normal)
 	}
 	else if (_OutputMode == 5) // DepthRaw
 	{
-		return depth01;
+		return clamp(depth01, 0, 1);
 	}
 
 

@@ -46,8 +46,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2cd1f9fe92fe2ed4d877a6ce1da9d8a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pose_client_port: 10253
-  video_client_port: 10254
+  pose_client_port: 12345
+  video_client_port: 12346
   rpg_dsim_version: 
   client_ip: 127.0.0.1
   HD_camera: {fileID: 2060161435559445602, guid: 7cfb8a134551f154996646e3ed7f5153, type: 3}

@@ -307,6 +307,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Camera_Controller
       objectReference: {fileID: 0}
+    - target: {fileID: 8638909755990179799, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 8638909755990179802, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
       propertyPath: input_ip
       value: 
@@ -365,6 +369,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8638909755990179803, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8638909755990179803, guid: 3d374c37885fb074d93f8b9bb965164c, type: 3}
+      propertyPath: m_ConstrainProportionsScale
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

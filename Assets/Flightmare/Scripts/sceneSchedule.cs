@@ -10,6 +10,7 @@ namespace RPGFlightmare
   public class Scenes
   {
     public const string SCENE_INDUSTRIAL = "Environments/Industrial/Scenes/DemoScene";
+    public const string SCENE_EMPTY = "Environments/Industrial/Scenes/EmptyScene";
     public const string SCENE_WAREHOUSE = "Environments/Warehouse/Scenes/DemoScene";
     public const string SCENE_NATUREFOREST = "NatureManufacture Assets/Forest Environment Dynamic Nature/Demo Scenes/Forest Demo Scene";
     public const string SCENE_WASTELAND = "ApocalypticWasteland/Scenes/Wasteland";
@@ -21,8 +22,9 @@ namespace RPGFlightmare
     public int num_scene; // number of scenes in total
     public Scenes()
     {
-      scenes_list.Add(SCENE_WAREHOUSE);
+      scenes_list.Add(SCENE_EMPTY);
       scenes_list.Add(SCENE_INDUSTRIAL);
+      scenes_list.Add(SCENE_WAREHOUSE);
       scenes_list.Add(SCENE_MOUNTAIN);
       scenes_list.Add(SCENE_WASTELAND);
       // scenes_list.Add(SCENE_NATUREFOREST);

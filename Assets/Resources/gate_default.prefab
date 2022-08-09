@@ -1,5 +1,119 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &3674449135596021392
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 4353531357105936814}
+    m_Modifications:
+    - target: {fileID: 3789945612973874306, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_Name
+      value: beech_tree_04
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_RootOrder
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -12.581436
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -4.9828167
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789945612973899938, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fee6b85eed3603490ba5d30b7c6ee7e5, type: 3}
+--- !u!1001 &6682542125232713766
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 4353531357105936814}
+    m_Modifications:
+    - target: {fileID: 100000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_Name
+      value: beech_plant_02
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_RootOrder
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -7.5706644
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.8352075
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e8a9d9eb000e0e34fb37ec72806c7282, type: 3}
 --- !u!1001 &8723592851307066036
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -69,7 +183,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -927199367670048503, guid: 1358e938c5cf8faf18bf9ce8a17c633d, type: 3}
       propertyPath: m_Name
-      value: rpg_gate
+      value: gate_default
       objectReference: {fileID: 0}
     - target: {fileID: -927199367670048503, guid: 1358e938c5cf8faf18bf9ce8a17c633d, type: 3}
       propertyPath: m_Layer
@@ -166,6 +280,11 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 1426445716969158492, guid: 1358e938c5cf8faf18bf9ce8a17c633d, type: 3}
+--- !u!4 &4353531357105936814 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4216859302048453862, guid: 1358e938c5cf8faf18bf9ce8a17c633d, type: 3}
+  m_PrefabInstance: {fileID: 8723592851307066036}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &8331175510571943824 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8462779894527920860, guid: 1358e938c5cf8faf18bf9ce8a17c633d, type: 3}

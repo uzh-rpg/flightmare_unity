@@ -11,13 +11,11 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Environments/Industrial/Scenes/DemoScene.unity
     guid: 03818a84e6e20aeec9ccdc69b66daf58
+  - enabled: 0
+    path: Assets/NatureManufacture Assets/Forest Environment Dynamic Nature/Demo
+      Scenes/Overview Scene.unity
+    guid: 47a023e3628e9ef4c93d6fcf3563c9b1
   - enabled: 1
-    path: Assets/Environments/Warehouse/Scenes/DemoScene.unity
-    guid: f60a90c928fe7ee4cb322afc5675b963
-  - enabled: 1
-    path: Assets/ApocalypticWasteland/Scenes/Wasteland.unity
-    guid: 246461ea805f3c14cb620102040f1e34
-  - enabled: 1
-    path: Assets/Mountain Environment/Demo Scenes/Standard Mountain Scene.unity
-    guid: edcaa881f1f0a7041805eb0cdf0646d4
+    path: Assets/Environments/Industrial/Scenes/EmptyScene.unity
+    guid: 57bec68615966442e83f8cfa7d559b0a
   m_configObjects: {}
