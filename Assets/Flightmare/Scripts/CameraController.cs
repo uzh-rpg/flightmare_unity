@@ -705,9 +705,10 @@ namespace RPGFlightmare
 
     void instantiateObjects()
     {
-      config_object.ReadCSVFile(internal_state, settings.object_csv, ListToVector3(settings.render_offset));
-      // 
-      // Initialize additional objects
+      Debug.Log("================InstantiateObjects=================");
+      // config_object.ReadCSVFile(internal_state, settings.object_csv, ListToVector3(settings.render_offset));
+      // // 
+      // // Initialize additional objects
       foreach (var obj_state in settings.static_objects)
       {
         GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
@@ -725,7 +726,7 @@ namespace RPGFlightmare
       foreach (var obj_state in settings.dynamic_objects)
       {
         GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-        // Debug.Log("obj_state id : " + obj_state.ID);
+        Debug.Log("obj_state id : " + obj_state.ID);
         // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
         GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
         Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);

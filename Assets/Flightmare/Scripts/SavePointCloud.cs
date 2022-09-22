@@ -52,7 +52,7 @@ namespace RPGFlightmare
           z < origin.z + range_eps.z / 2.0f;
           z += resolution)
       {
-
+        // Debug.Log("===================Generating Pointcloud====================");
         // iterate over x coordinate
         for (float x = resolution / 2.0f + origin.x -
                         range_eps.x / 2.0f;
