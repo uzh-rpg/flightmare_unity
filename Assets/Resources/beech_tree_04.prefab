@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3789945612973899936}
   - component: {fileID: 3789945612974702722}
   - component: {fileID: 3789945612975800898}
+  - component: {fileID: 4976122831403265543}
   m_Layer: 0
   m_Name: beech_tree_04_LOD0
   m_TagString: Untagged
@@ -83,6 +84,20 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &4976122831403265543
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3789945612973874304}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  m_Radius: 1
+  m_Height: 20
+  m_Direction: 1
+  m_Center: {x: 1, y: 9.280606, z: 0}
 --- !u!1 &3789945612973874306
 GameObject:
   m_ObjectHideFlags: 0
@@ -255,8 +270,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3789945612973874310}
   m_LocalRotation: {x: 0.000000021855694, y: 0, z: -0, w: 1}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.00030327, y: -0.082318, z: 0.0041385}
+  m_LocalScale: {x: 1.0088, y: 1.0088, z: 1.0088}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3789945612973899938}

@@ -49,7 +49,7 @@ namespace RPGFlightmare
     [HideInInspector]
     public const string client_ip_pref_key = "client_ip";
     [HideInInspector]
-    public const int connection_timeout_seconds_default = 10;
+    public const int connection_timeout_seconds_default = 20;
     [HideInInspector]
     public string rpg_dsim_version = "";
 
@@ -107,6 +107,7 @@ namespace RPGFlightmare
     {
       // Application.targetFrameRate = 9999;
       // Make sure that this gameobject survives across scene reloads
+      Debug.Log("Start ZMQ sockets.");
       DontDestroyOnLoad(this.gameObject);
       // Get application version
       rpg_dsim_version = Application.version;
@@ -298,6 +299,7 @@ namespace RPGFlightmare
             settings = JsonConvert.DeserializeObject<SettingsMessage_t>(msg[1].ConvertToString());
             settings.InitParamsters();
             // Make sure that all objects are initialized properly
+            Debug.Log("initialize objects: ");
             initializeObjects(); // readyToRender set True if all objects are initialized.
             if (internal_state.readyToRender)
             {
@@ -466,7 +468,7 @@ namespace RPGFlightmare
         {
           // Apply translation, rotation, and scaling to vehicle
           GameObject vehicle_obj = internal_state.getGameobject(vehicle_i.ID, quad_template);
-          Vector3 vehicle_position = ListToVector3(vehicle_i.position) + ListToVector3(settings.render_offset);
+          Vector3 vehicle_position = ListToVector3(vehicle_i.position);
           vehicle_obj.transform.SetPositionAndRotation(vehicle_position, ListToQuaternion(vehicle_i.rotation));
           vehicle_obj.transform.localScale = ListToVector3(vehicle_i.size);
           foreach (Camera_t camera in vehicle_i.cameras)
@@ -479,7 +481,7 @@ namespace RPGFlightmare
             var currentCam = obj.GetComponent<Camera>();
             currentCam.fieldOfView = camera.fov;
             // apply translation and rotation;
-            var translation = ListToVector3(vehicle_i.position) + ListToVector3(settings.render_offset);
+            var translation = ListToVector3(vehicle_i.position);
             var quaternion = ListToQuaternion(vehicle_i.rotation);
 
             // Quaternion To Matrix conversion failed because input Quaternion(=quaternion) is invalid
@@ -675,7 +677,8 @@ namespace RPGFlightmare
           currentCam.nearClipPlane = camera.nearClipPlane[0];
           currentCam.farClipPlane = camera.farClipPlane[0];
           // apply translation and rotation;
-          var translation = ListToVector3(vehicle_i.position) + ListToVector3(settings.render_offset);
+          var translation = ListToVector3(vehicle_i.position);
+          // Debug.Log("Vehicle Position" + translation);
           var quaternion = ListToQuaternion(vehicle_i.rotation);
           var scale = new Vector3(1, 1, 1);
 
@@ -686,6 +689,7 @@ namespace RPGFlightmare
           Debug.Log(T_WC);
           // compute camera position and rotation with respect to world frame
           var position = new Vector3(T_WC[0, 3], T_WC[1, 3], T_WC[2, 3]);
+          // Debug.Log("Camera Position" + position);
           var rotation = T_WC.rotation;
           obj.transform.SetPositionAndRotation(position, rotation);
         }
@@ -716,32 +720,32 @@ namespace RPGFlightmare
         // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
         GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
         obj.transform.localScale = ListToVector3(obj_state.size);
-        Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);
+        Vector3 obj_position = ListToVector3(obj_state.position);
         obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(obj_state.rotation));
         obj.transform.localScale = ListToVector3(obj_state.size);
         // obj.layer = 9;
       }
 
       // 
-      foreach (var obj_state in settings.dynamic_objects)
-      {
-        GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
-        Debug.Log("obj_state id : " + obj_state.ID);
-        // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
-        GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
-        Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);
-        obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(obj_state.rotation));
-        obj.transform.localScale = ListToVector3(obj_state.size);
-        // obj.layer = 9;
-      }
+      // foreach (var obj_state in settings.dynamic_objects)
+      // {
+      //   GameObject prefab = Resources.Load(obj_state.prefabID) as GameObject;
+      //   Debug.Log("obj_state id : " + obj_state.ID);
+      //   // GameObject obj = internal_state.getGameobject(obj_state.ID, gate_template); 
+      //   GameObject obj = internal_state.getGameobject(obj_state.ID, prefab);
+      //   Vector3 obj_position = ListToVector3(obj_state.position) + ListToVector3(settings.render_offset);
+      //   obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(obj_state.rotation));
+      //   obj.transform.localScale = ListToVector3(obj_state.size);
+      //   // obj.layer = 9;
+      // }
 
       //  
       foreach (var vehicle in settings.vehicles)
       {
         Debug.Log("vehicle id : " + vehicle.ID);
         GameObject obj = internal_state.getGameobject(vehicle.ID, quad_template);
-        Vector3 obj_position = ListToVector3(vehicle.position) + ListToVector3(settings.render_offset);
-        // Debug.Log(ListToVector3(vehicle.position));
+        Vector3 obj_position = ListToVector3(vehicle.position);
+        // Vector3 obj_position = ListToVector3(vehicle.position) + ListToVector3(settings.render_offset);
         obj.transform.SetPositionAndRotation(obj_position, ListToQuaternion(vehicle.rotation));
         obj.transform.localScale = ListToVector3(vehicle.size);
       }
